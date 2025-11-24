@@ -1,0 +1,100 @@
+{
+  "timestamp": "2025-11-24T07:18:25.070791Z",
+  "repo": "D:\\semester5\\quality\\ai-agent-project\\agent\\workspaces\\Blackhole______20251124_151755\\cpp_project",
+  "mode": "cpp",
+  "environment": {
+    "os": "nt",
+    "cpp_qt_behavior": "skip"
+  },
+  "tests": [
+    {
+      "test": "C++ compile",
+      "status": "SKIPPED",
+      "detail": "Skipped by configuration (CPP_QT_BEHAVIOR=skip)."
+    },
+    {
+      "test": "C++ runtime",
+      "status": "SKIPPED",
+      "detail": "Skipped runtime tests by configuration."
+    },
+    {
+      "test": "Resource Management",
+      "status": "PASS",
+      "detail": "Read success: Test"
+    },
+    {
+      "test": "Concurrency",
+      "status": "PASS",
+      "detail": "Task 1 done\nTask 0 done\nTask 2 done"
+    },
+    {
+      "test": "Boundary Test ",
+      "status": "PASS",
+      "detail": "Value  handled"
+    },
+    {
+      "test": "Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "PASS",
+      "detail": "Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa handled"
+    },
+    {
+      "test": "Boundary Test -1",
+      "status": "PASS",
+      "detail": "Value -1 handled"
+    },
+    {
+      "test": "Boundary Test 0",
+      "status": "PASS",
+      "detail": "Value 0 handled"
+    },
+    {
+      "test": "Boundary Test 10000000000.0",
+      "status": "PASS",
+      "detail": "Value 10000000000.0 handled"
+    },
+    {
+      "test": "Boundary Test ('int', 'a')",
+      "status": "PASS",
+      "detail": "Caught expected exception: invalid literal for int() with base 10: 'a'"
+    },
+    {
+      "test": "Boundary Test ('float', 'b')",
+      "status": "PASS",
+      "detail": "Caught expected exception: could not convert string to float: 'b'"
+    },
+    {
+      "test": "Env Test",
+      "status": "PASS",
+      "detail": "TEST_MODE set to 1"
+    },
+    {
+      "test": "Dynamic Code Test",
+      "status": "PASS",
+      "detail": "JSON loaded: {'__import__': 'os'}"
+    }
+  ],
+  "pre_tests": [
+    {
+      "test": "C++ compile",
+      "status": "SKIPPED",
+      "detail": "Skipped by configuration (CPP_QT_BEHAVIOR=skip)."
+    },
+    {
+      "test": "C++ runtime",
+      "status": "SKIPPED",
+      "detail": "Skipped runtime tests by configuration."
+    }
+  ],
+  "patch_summary": {
+    "total_patches": 0,
+    "applied": 0,
+    "bugs_fixed": 0,
+    "patches": []
+  },
+  "summary": {
+    "total_tests": 13,
+    "passed_tests": 11,
+    "remaining": 2,
+    "new_issues": 0
+  }
+}

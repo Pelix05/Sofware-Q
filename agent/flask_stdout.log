@@ -1,0 +1,3 @@
+[Debug] Qwen disabled via DISABLE_QWEN env var; skipping initialization.
+ * Serving Flask app 'FlaskApp'
+ * Debug mode: on

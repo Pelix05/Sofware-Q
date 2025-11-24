@@ -1,0 +1,35 @@
+ # Environment and sensitive files
+ .env
+
+ # Python
+ __pycache__/
+ *.py[cod]
+ *.pyo
+ *.pyd
+ .Python
+
+ # Archives and binaries
+ *.zip
+ *.tar
+ *.gz
+ *.exe
+
+ # Ignore workspaces and zip artifacts
+agent/workspaces/
+*.zip
+
+ # Agent workspaces and generated data
+ agent/workspaces/
+ agent/patches/
+ repo-clean.git/
+ repo-mirror.git/
+
+ # Logs
+ *.log
+
+ # Editors
+ .vscode/
+ .idea/
+
+ # OS
+ .DS_Store

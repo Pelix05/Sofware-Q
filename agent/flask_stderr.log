@@ -1,0 +1,344 @@
+2025-11-24 21:00:15.320022: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+2025-11-24 21:00:19.491587: I tensorflow/core/util/port.cc:153] oneDNN custom operations are on. You may see slightly different numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+[2025-11-24 21:00:25,922] INFO Loaded environment from repo .env D:\semester5\quality\ai-agent-project\.env
+[2025-11-24 21:00:27,307] INFO [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://26.26.26.1:5000
+[2025-11-24 21:00:27,308] INFO [33mPress CTRL+C to quit[0m
+[2025-11-24 21:09:20,896] INFO 127.0.0.1 - - [24/Nov/2025 21:09:20] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:22,945] INFO 127.0.0.1 - - [24/Nov/2025 21:09:22] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:24,954] INFO 127.0.0.1 - - [24/Nov/2025 21:09:24] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:26,973] INFO 127.0.0.1 - - [24/Nov/2025 21:09:26] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:28,985] INFO 127.0.0.1 - - [24/Nov/2025 21:09:28] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:31,007] INFO 127.0.0.1 - - [24/Nov/2025 21:09:31] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:33,026] INFO 127.0.0.1 - - [24/Nov/2025 21:09:33] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:35,047] INFO 127.0.0.1 - - [24/Nov/2025 21:09:35] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:37,053] INFO 127.0.0.1 - - [24/Nov/2025 21:09:37] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:39,063] INFO 127.0.0.1 - - [24/Nov/2025 21:09:39] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:41,076] INFO 127.0.0.1 - - [24/Nov/2025 21:09:41] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:43,084] INFO 127.0.0.1 - - [24/Nov/2025 21:09:43] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:45,097] INFO 127.0.0.1 - - [24/Nov/2025 21:09:45] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:47,104] INFO 127.0.0.1 - - [24/Nov/2025 21:09:47] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:49,113] INFO 127.0.0.1 - - [24/Nov/2025 21:09:49] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:51,134] INFO 127.0.0.1 - - [24/Nov/2025 21:09:51] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:53,145] INFO 127.0.0.1 - - [24/Nov/2025 21:09:53] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:55,163] INFO 127.0.0.1 - - [24/Nov/2025 21:09:55] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:57,170] INFO 127.0.0.1 - - [24/Nov/2025 21:09:57] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:09:59,180] INFO 127.0.0.1 - - [24/Nov/2025 21:09:59] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:01,195] INFO 127.0.0.1 - - [24/Nov/2025 21:10:01] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:03,215] INFO 127.0.0.1 - - [24/Nov/2025 21:10:03] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:05,224] INFO 127.0.0.1 - - [24/Nov/2025 21:10:05] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:07,244] INFO 127.0.0.1 - - [24/Nov/2025 21:10:07] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:09,264] INFO 127.0.0.1 - - [24/Nov/2025 21:10:09] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:11,287] INFO 127.0.0.1 - - [24/Nov/2025 21:10:11] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:13,300] INFO 127.0.0.1 - - [24/Nov/2025 21:10:13] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:15,316] INFO 127.0.0.1 - - [24/Nov/2025 21:10:15] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:17,328] INFO 127.0.0.1 - - [24/Nov/2025 21:10:17] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:19,371] INFO 127.0.0.1 - - [24/Nov/2025 21:10:19] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:21,383] INFO 127.0.0.1 - - [24/Nov/2025 21:10:21] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:23,391] INFO 127.0.0.1 - - [24/Nov/2025 21:10:23] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:25,411] INFO 127.0.0.1 - - [24/Nov/2025 21:10:25] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:27,418] INFO 127.0.0.1 - - [24/Nov/2025 21:10:27] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:29,436] INFO 127.0.0.1 - - [24/Nov/2025 21:10:29] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:31,444] INFO 127.0.0.1 - - [24/Nov/2025 21:10:31] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:33,456] INFO 127.0.0.1 - - [24/Nov/2025 21:10:33] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:35,461] INFO 127.0.0.1 - - [24/Nov/2025 21:10:35] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:37,480] INFO 127.0.0.1 - - [24/Nov/2025 21:10:37] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:39,500] INFO 127.0.0.1 - - [24/Nov/2025 21:10:39] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:41,520] INFO 127.0.0.1 - - [24/Nov/2025 21:10:41] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:43,540] INFO 127.0.0.1 - - [24/Nov/2025 21:10:43] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:45,548] INFO 127.0.0.1 - - [24/Nov/2025 21:10:45] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:47,554] INFO 127.0.0.1 - - [24/Nov/2025 21:10:47] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:49,558] INFO 127.0.0.1 - - [24/Nov/2025 21:10:49] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:51,567] INFO 127.0.0.1 - - [24/Nov/2025 21:10:51] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:53,585] INFO 127.0.0.1 - - [24/Nov/2025 21:10:53] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:55,604] INFO 127.0.0.1 - - [24/Nov/2025 21:10:55] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:57,611] INFO 127.0.0.1 - - [24/Nov/2025 21:10:57] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:10:59,630] INFO 127.0.0.1 - - [24/Nov/2025 21:10:59] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:01,645] INFO 127.0.0.1 - - [24/Nov/2025 21:11:01] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:03,655] INFO 127.0.0.1 - - [24/Nov/2025 21:11:03] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:05,673] INFO 127.0.0.1 - - [24/Nov/2025 21:11:05] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:07,683] INFO 127.0.0.1 - - [24/Nov/2025 21:11:07] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:09,688] INFO 127.0.0.1 - - [24/Nov/2025 21:11:09] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:11,696] INFO 127.0.0.1 - - [24/Nov/2025 21:11:11] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:13,705] INFO 127.0.0.1 - - [24/Nov/2025 21:11:13] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:15,713] INFO 127.0.0.1 - - [24/Nov/2025 21:11:15] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:17,731] INFO 127.0.0.1 - - [24/Nov/2025 21:11:17] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:19,736] INFO 127.0.0.1 - - [24/Nov/2025 21:11:19] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:21,743] INFO 127.0.0.1 - - [24/Nov/2025 21:11:21] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:23,752] INFO 127.0.0.1 - - [24/Nov/2025 21:11:23] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:25,764] INFO 127.0.0.1 - - [24/Nov/2025 21:11:25] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:27,771] INFO 127.0.0.1 - - [24/Nov/2025 21:11:27] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:29,782] INFO 127.0.0.1 - - [24/Nov/2025 21:11:29] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:31,790] INFO 127.0.0.1 - - [24/Nov/2025 21:11:31] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:33,802] INFO 127.0.0.1 - - [24/Nov/2025 21:11:33] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:35,807] INFO 127.0.0.1 - - [24/Nov/2025 21:11:35] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:37,819] INFO 127.0.0.1 - - [24/Nov/2025 21:11:37] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:39,830] INFO 127.0.0.1 - - [24/Nov/2025 21:11:39] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:41,840] INFO 127.0.0.1 - - [24/Nov/2025 21:11:41] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:43,846] INFO 127.0.0.1 - - [24/Nov/2025 21:11:43] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:45,858] INFO 127.0.0.1 - - [24/Nov/2025 21:11:45] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:47,865] INFO 127.0.0.1 - - [24/Nov/2025 21:11:47] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:49,874] INFO 127.0.0.1 - - [24/Nov/2025 21:11:49] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:51,892] INFO 127.0.0.1 - - [24/Nov/2025 21:11:51] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:53,910] INFO 127.0.0.1 - - [24/Nov/2025 21:11:53] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:55,918] INFO 127.0.0.1 - - [24/Nov/2025 21:11:55] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:57,931] INFO 127.0.0.1 - - [24/Nov/2025 21:11:57] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:11:59,945] INFO 127.0.0.1 - - [24/Nov/2025 21:11:59] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:01,951] INFO 127.0.0.1 - - [24/Nov/2025 21:12:01] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:03,964] INFO 127.0.0.1 - - [24/Nov/2025 21:12:03] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:05,972] INFO 127.0.0.1 - - [24/Nov/2025 21:12:05] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:07,982] INFO 127.0.0.1 - - [24/Nov/2025 21:12:07] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:09,995] INFO 127.0.0.1 - - [24/Nov/2025 21:12:09] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:12,005] INFO 127.0.0.1 - - [24/Nov/2025 21:12:12] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:14,022] INFO 127.0.0.1 - - [24/Nov/2025 21:12:14] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:16,034] INFO 127.0.0.1 - - [24/Nov/2025 21:12:16] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:18,044] INFO 127.0.0.1 - - [24/Nov/2025 21:12:18] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:20,054] INFO 127.0.0.1 - - [24/Nov/2025 21:12:20] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:22,075] INFO 127.0.0.1 - - [24/Nov/2025 21:12:22] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:24,087] INFO 127.0.0.1 - - [24/Nov/2025 21:12:24] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:26,093] INFO 127.0.0.1 - - [24/Nov/2025 21:12:26] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:28,106] INFO 127.0.0.1 - - [24/Nov/2025 21:12:28] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:30,124] INFO 127.0.0.1 - - [24/Nov/2025 21:12:30] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:32,131] INFO 127.0.0.1 - - [24/Nov/2025 21:12:32] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:34,140] INFO 127.0.0.1 - - [24/Nov/2025 21:12:34] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:36,152] INFO 127.0.0.1 - - [24/Nov/2025 21:12:36] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:38,166] INFO 127.0.0.1 - - [24/Nov/2025 21:12:38] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:40,177] INFO 127.0.0.1 - - [24/Nov/2025 21:12:40] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:42,195] INFO 127.0.0.1 - - [24/Nov/2025 21:12:42] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:44,208] INFO 127.0.0.1 - - [24/Nov/2025 21:12:44] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:46,228] INFO 127.0.0.1 - - [24/Nov/2025 21:12:46] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:48,242] INFO 127.0.0.1 - - [24/Nov/2025 21:12:48] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:50,262] INFO 127.0.0.1 - - [24/Nov/2025 21:12:50] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:52,277] INFO 127.0.0.1 - - [24/Nov/2025 21:12:52] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:54,297] INFO 127.0.0.1 - - [24/Nov/2025 21:12:54] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:56,306] INFO 127.0.0.1 - - [24/Nov/2025 21:12:56] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:12:58,317] INFO 127.0.0.1 - - [24/Nov/2025 21:12:58] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:00,333] INFO 127.0.0.1 - - [24/Nov/2025 21:13:00] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:02,342] INFO 127.0.0.1 - - [24/Nov/2025 21:13:02] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:04,362] INFO 127.0.0.1 - - [24/Nov/2025 21:13:04] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:06,378] INFO 127.0.0.1 - - [24/Nov/2025 21:13:06] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:08,387] INFO 127.0.0.1 - - [24/Nov/2025 21:13:08] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:10,395] INFO 127.0.0.1 - - [24/Nov/2025 21:13:10] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:12,402] INFO 127.0.0.1 - - [24/Nov/2025 21:13:12] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:14,409] INFO 127.0.0.1 - - [24/Nov/2025 21:13:14] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:16,416] INFO 127.0.0.1 - - [24/Nov/2025 21:13:16] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:18,438] INFO 127.0.0.1 - - [24/Nov/2025 21:13:18] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:20,455] INFO 127.0.0.1 - - [24/Nov/2025 21:13:20] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:13:51,670] INFO /upload request received: filename=upload_test.zip, file_type=None, remote=127.0.0.1
+[2025-11-24 21:14:37,804] INFO [BG] Start processing workspace upload_test_20251124_211414 (cpp)
+[2025-11-24 21:14:37,817] INFO /upload accepted: workspace=upload_test_20251124_211414
+[2025-11-24 21:14:38,873] INFO 127.0.0.1 - - [24/Nov/2025 21:14:38] "POST /upload HTTP/1.1" 200 -
+[2025-11-24 21:14:52,145] INFO /upload request received: filename=upload_test.zip, file_type=None, remote=127.0.0.1
+[2025-11-24 21:15:13,849] INFO /upload error: [Error] Upload failed: Unable to allocate output buffer.
+[2025-11-24 21:15:13,864] INFO 127.0.0.1 - - [24/Nov/2025 21:15:13] "[31m[1mPOST /upload HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:14,973] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:14,989] INFO 127.0.0.1 - - [24/Nov/2025 21:15:14] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:16,002] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:17,038] INFO 127.0.0.1 - - [24/Nov/2025 21:15:17] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:18,049] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:19,057] INFO 127.0.0.1 - - [24/Nov/2025 21:15:19] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:20,069] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:21,076] INFO 127.0.0.1 - - [24/Nov/2025 21:15:21] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:22,087] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:23,083] INFO 127.0.0.1 - - [24/Nov/2025 21:15:23] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:24,095] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:25,096] INFO 127.0.0.1 - - [24/Nov/2025 21:15:25] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:26,105] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:27,103] INFO 127.0.0.1 - - [24/Nov/2025 21:15:27] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:28,111] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:29,110] INFO 127.0.0.1 - - [24/Nov/2025 21:15:29] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:30,118] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:31,119] INFO 127.0.0.1 - - [24/Nov/2025 21:15:31] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:32,130] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:33,134] INFO 127.0.0.1 - - [24/Nov/2025 21:15:33] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:35,147] INFO 127.0.0.1 - - [24/Nov/2025 21:15:35] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:36,162] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:37,162] INFO 127.0.0.1 - - [24/Nov/2025 21:15:37] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:38,174] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:39,174] INFO 127.0.0.1 - - [24/Nov/2025 21:15:39] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:40,186] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:41,180] INFO 127.0.0.1 - - [24/Nov/2025 21:15:41] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:42,263] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:43,264] INFO 127.0.0.1 - - [24/Nov/2025 21:15:43] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:44,271] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:45,270] INFO 127.0.0.1 - - [24/Nov/2025 21:15:45] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:46,274] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:47,288] INFO 127.0.0.1 - - [24/Nov/2025 21:15:47] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:48,298] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:49,293] INFO 127.0.0.1 - - [24/Nov/2025 21:15:49] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:50,306] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:51,302] INFO 127.0.0.1 - - [24/Nov/2025 21:15:51] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:52,310] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:53,308] INFO 127.0.0.1 - - [24/Nov/2025 21:15:53] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:54,316] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:55,325] INFO 127.0.0.1 - - [24/Nov/2025 21:15:55] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:56,338] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:57,335] INFO 127.0.0.1 - - [24/Nov/2025 21:15:57] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:15:58,343] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+[2025-11-24 21:15:59,355] INFO 127.0.0.1 - - [24/Nov/2025 21:15:59] "[31m[1mGET /status?ws= HTTP/1.1[0m" 400 -
+[2025-11-24 21:16:01,181] ERROR Error on request:
+Traceback (most recent call last):
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 370, in run_wsgi
+    execute(self.server.app)
+    ~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\CIA FANG\AppData\Local\Programs\Python\Python313\Lib\site-packages\werkzeug\serving.py", line 355, in execute
+    data = self.rfile.read(10_000_000)
+MemoryError
+Exception ignored in thread started by <bound method Thread._bootstrap of <Thread(Thread-149 (process_request_thread), initial daemon)>>:
+MemoryError: 

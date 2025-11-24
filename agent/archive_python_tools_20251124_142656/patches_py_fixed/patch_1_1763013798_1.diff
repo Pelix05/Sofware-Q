@@ -1,0 +1,42 @@
+diff --git a/puzzle-challenge/labels.py b/puzzle-challenge/labels.py
+--- a/puzzle-challenge/labels.py
++++ b/puzzle-challenge/labels.py
+@@ -132,7 +132,7 @@
+         self.disable_image,
+         rendered["disable"])
+        self.image = self.idle_image
+-       self.clicked = False
+-       self.hover = True
++       self.clicked = False
++       self.hover = False
+    def render_text(self):
+-       # Normalize font key and ensure a Font object is available in LOADED_FONTS. Fixing potential undefined variable error.
+-       font_path, size = self.font, self.font_size
+-       key = (font_path, size)
++       # Normalize font key and ensure a Font object is available in LOADED_FONTS.
++       if hasattr(self, 'font'):
++           font_path, size = self.font, self.font_size
++           key = (font_path, size)
++       else:
++           key = None
+    def __init__(self, x, y, font, font_size, idle_image, disable_image):
+-       self.font = font
+-       self.font_size = font_size
++       self.font = None
++       self.font_size = None
+        self.idle_image = idle_image
+        self.disable_image = disable_image
+        self.image = self.idle_image
+        self.clicked = False
+        self.hover = True
+    def render(self, rendered):
+        # Normalize font key and ensure a Font object is available in LOADED_FONTS. Fixing potential undefined variable error.
+        font_path, size = self.font, self.font_size
+        key = (font_path, size)
+    def render_text(self):
+        # Normalize font key and ensure a Font object is available in LOADED_FONTS.
+        if hasattr(self, 'font'):
+            font_path, size = self.font, self.font_size
+            key = (font_path, size)
+        else:
+            key = None

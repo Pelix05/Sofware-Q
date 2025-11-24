@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BlackHole — Code Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+    --bg1:#0f1226; --bg2:#0b1630; --card:#0f1724; --accent:#7c5cff; --accent-2:#00d4ff; --muted:#9aa4bf; --glass: rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#e6eef8}
+.app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+.frame{width:100%;max-width:1400px;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 10px 40px rgba(2,6,23,0.7);overflow:hidden;display:flex;gap:0}
+.sidebar{width:36%;min-width:320px;padding:24px 28px;background:linear-gradient(135deg, rgba(124,92,255,0.06), rgba(0,212,255,0.02));backdrop-filter: blur(6px);}
+.content{flex:1;padding:28px;display:flex;flex-direction:column;gap:16px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#071029}
+.title{font-size:18px;font-weight:800}
+.subtitle{font-size:13px;color:var(--muted);margin-top:2px}
+.section{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,0.03)}
+.file-area{display:flex;flex-direction:column;gap:12px}
+.drop{display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px dashed rgba(255,255,255,0.05);background:var(--glass);cursor:pointer}
+.drop:hover{border-color:rgba(124,92,255,0.35)}
+.file-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.file-meta #wsInfo{max-width:220px;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+.btn{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+.btn-primary{background:linear-gradient(90deg,var(--accent),#6b9bff);color:#071029}
+.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
+.controls{display:flex;gap:10px}
+.progress-wrap{margin-top:8px}
+.progress{height:12px;background:rgba(255,255,255,0.04);border-radius:8px;overflow:hidden}
+.progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .25s}
+.status-line{font-size:13px;color:var(--muted);margin-top:8px}
+
+/* right side */
+.results{display:flex;flex-direction:column;gap:14px}
+.card{background:linear-gradient(180deg, rgba(6,9,20,0.6), rgba(6,9,20,0.45));border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,0.03);min-height:80px}
+.results .card.code{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;white-space:pre-wrap;overflow:auto;max-height:520px;word-break:break-word;overflow-wrap:anywhere}
+.card .small, .card .detail {white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+.analysis-grid, .analysis-grid > * {min-width:0}
+.analysis-panel{box-sizing:border-box}
+.analysis-panel .small{white-space:normal}
+.analysis-panel.code{white-space:normal}
+.panel-title{color:#cfe6ff}
+.panel-body{white-space:normal;word-break:break-word;overflow-wrap:anywhere}
+
+/* Ensure injected tables fit the card and wrap cells */
+#tableContent table{width:100% !important; table-layout: fixed !important; border-collapse: collapse;}
+#tableContent th, #tableContent td{white-space:normal; word-break:break-word; overflow-wrap:anywhere; padding:6px; border:1px solid rgba(255,255,255,0.04)}
+#tableContent{max-width:100%; box-sizing:border-box}
+
+/* file name wrap */
+#fileName{max-width:220px; white-space:normal; word-break:break-word; overflow-wrap:anywhere}
+.header-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.small{font-size:13px;color:var(--muted)}
+.badge{padding:6px 10px;border-radius:999px;font-weight:700}
+.badge.pass{background:rgba(10,160,90,0.12);color:#7ef3b6}
+.badge.fail{background:rgba(255,80,80,0.06);color:#ffb4b4}
+.badge.info{background:rgba(124,92,255,0.06);color:#bfb4ff}
+
+/* responsiveness */
+@media(max-width:920px){.frame{flex-direction:column}.sidebar{width:100%;min-width:unset}.content{padding:18px}.analysis-grid{flex-direction:column} }
+</style>
+</head>
+<body>
+<div class="app">
+    <div class="frame">
+        <div class="sidebar">
+            <div class="brand">
+                </div>
+            
+                <!-- Upload block moved into sidebar so left column stacks upload then analysis -->
+                <div class="section file-area" style="margin-top:12px">
+                    <label class="small">Upload Project (ZIP)</label>
+                            <div id="dropArea" class="drop">
+                        <input id="fileInput" type="file" accept=".zip" style="display:none">
+                        <div style="flex:1">
+                            <div id="fileName" style="font-weight:700;color:#dfe9ff">No file selected</div>
+                            <div style="font-size:12px;color:var(--muted);margin-top:6px">Drag & drop or click to choose.</div>
+                        </div>
+                        <div>
+                            <button id="chooseBtn" class="btn btn-ghost">Choose</button>
+                        </div>
+                    </div>
+
+                    <div class="file-meta">
+                        <div class="controls">
+                            <button id="uploadBtn" class="btn btn-primary">Upload & Analyze</button>
+                        </div>
+                        <div class="small" id="wsInfo">No workspace</div>
+                    </div>
+
+                    <div class="progress-wrap">
+                        <div class="progress"><i id="progressBar"></i></div>
+                        <div class="status-line" id="progressText">Idle</div>
+                    </div>
+                </div>
+
+                <!-- Moved: Static & Dynamic Analysis card now lives in the left sidebar under upload -->
+                <div id="analysisCard" class="section card" style="margin-top:12px;padding:12px;">
+                    <div style="font-weight:700;margin-bottom:6px">Static &amp; Dynamic Analysis</div>
+                    <div class="analysis-grid" style="display:flex;gap:12px;align-items:stretch;">
+                        <div id="staticContent" class="analysis-panel" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:300px;overflow:auto;display:flex;flex-direction:column;">
+                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Static</div>
+                            <div class="panel-body small" style="flex:1;overflow:auto">Results will appear here.</div>
+                        </div>
+                        <div id="dynamicContent" class="analysis-panel code" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:300px;overflow:auto;display:flex;flex-direction:column;">
+                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Dynamic</div>
+                            <div class="panel-body small" style="flex:1;overflow:auto">Runtime results will appear here.</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="content">
+
+        <div class="content">
+            <div class="header-row">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <div style="font-weight:800;font-size:20px">Analysis Results</div>
+                    <div class="small" id="lastUpdated">No results yet</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <div id="summaryBadge" class="badge info">Idle</div>
+                </div>
+            </div>
+
+            <div class="results">
+                <!-- Table card now occupies the entire right column and is larger -->
+                <div id="tableCard" class="card" style="margin-top:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;">
+                    <div style="font-weight:700;margin-bottom:8px">Test Case Table</div>
+                    <div id="tableContent" class="small" style="flex:1;overflow:auto;display:block;box-sizing:border-box;max-height:calc(100vh - 220px);">The test results table will appear here when available.</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const chooseBtn = document.getElementById('chooseBtn');
+const dropArea = document.getElementById('dropArea');
+const fileName = document.getElementById('fileName');
+const uploadBtn = document.getElementById('uploadBtn');
+const progressBar = document.getElementById('progressBar');
+const progressText = document.getElementById('progressText');
+const wsInfo = document.getElementById('wsInfo');
+const staticContent = document.getElementById('staticContent');
+const dynamicContent = document.getElementById('dynamicContent');
+const tableContent = document.getElementById('tableContent');
+const summaryBadge = document.getElementById('summaryBadge');
+const lastUpdated = document.getElementById('lastUpdated');
+
+chooseBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+    fileName.textContent = fileInput.files.length ? fileInput.files[0].name : 'No file selected';
+});
+
+dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.borderColor = 'rgba(124,92,255,0.35)'; });
+dropArea.addEventListener('dragleave', e => { dropArea.style.borderColor = 'rgba(255,255,255,0.03)'; });
+dropArea.addEventListener('drop', e => { e.preventDefault(); dropArea.style.borderColor = 'rgba(255,255,255,0.03)'; if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; fileName.textContent = e.dataTransfer.files[0].name; }});
+
+function setProgress(p, msg){ progressBar.style.width = (p||0) + '%'; progressText.textContent = msg || '' }
+
+async function pollStatus(ws){
+    try{
+        const s = await fetch('/status?ws=' + encodeURIComponent(ws));
+        const sd = await s.json();
+        const prog = (sd && typeof sd.progress === 'number') ? sd.progress : (sd && sd.progress ? parseInt(sd.progress) : null);
+        const msg = (sd && sd.message) ? sd.message : (sd && sd.status ? sd.status : 'Processing');
+        if (prog!==null && !isNaN(prog)) setProgress(prog, msg);
+        else setProgress(30, msg);
+
+        if (sd && (sd.status === 'Done' || sd.status === 'done' || sd.status === 'Complete' || sd.status === 'complete')){
+            setProgress(100,'Complete');
+            summaryBadge.className = 'badge pass'; summaryBadge.textContent = 'Complete';
+            lastUpdated.textContent = new Date().toLocaleString();
+            // fetch result
+            setTimeout(async ()=>{
+                const res = sd.result || sd;
+                renderResult(res);
+            }, 500);
+            return true;
+        }
+        if (sd && (sd.status=== 'Error' || sd.status==='error')){ summaryBadge.className='badge fail'; summaryBadge.textContent='Error'; tableContent.textContent = sd.error || 'Processing error'; return true }
+        // update summary
+        summaryBadge.className='badge info'; summaryBadge.textContent = msg || 'Processing';
+        return false;
+    }catch(e){ summaryBadge.className='badge fail'; summaryBadge.textContent='Poll failed'; tableContent.textContent = ''+e; return true }
+}
+
+function highlight(s){ if(!s) return ''; return String(s).replace(/PASS/g,'<span style="color:#7ef3b6;font-weight:800">PASS</span>').replace(/FAIL/g,'<span style="color:#ffb4b4;font-weight:800">FAIL</span>') }
+
+function renderResult(res){
+    if(!res) return;
+    wsInfo.textContent = res.workspace || 'workspace';
+    // populate static/dynamic panels into the dedicated panel-body elements
+    const statBody = staticContent.querySelector('.panel-body');
+    if(statBody){ statBody.innerHTML = highlight(res.static || res.static_analysis || 'No static output'); }
+    else { const d = document.createElement('div'); d.className = 'panel-body small'; d.innerHTML = highlight(res.static || res.static_analysis || 'No static output'); staticContent.appendChild(d); }
+
+    const dynBody = dynamicContent.querySelector('.panel-body');
+    if(dynBody){ dynBody.innerHTML = highlight(res.dynamic || res.dynamic_analysis || 'No dynamic output'); }
+    else { const d2 = document.createElement('div'); d2.className = 'panel-body small'; d2.innerHTML = highlight(res.dynamic || res.dynamic_analysis || 'No dynamic output'); dynamicContent.appendChild(d2); }
+    // Prefer structured UI table if provided by backend
+    try{
+        let ui = res.ui_html || (res.dynamic_structured && res.dynamic_structured.ui_summary && res.dynamic_structured.ui_summary.ui_html);
+        if(ui){
+            tableContent.innerHTML = ui;
+        } else if(res.ui_summary && res.ui_summary.ui_html){
+            tableContent.innerHTML = res.ui_summary.ui_html;
+        } else {
+            tableContent.innerHTML = '<pre class="small">' + escapeHtml(JSON.stringify({static:res.static, dynamic:res.dynamic}, null, 2)) + '</pre>';
+        }
+    }catch(e){
+        tableContent.innerHTML = '<pre class="small">' + escapeHtml(JSON.stringify(res, null, 2)) + '</pre>';
+    }
+}
+
+uploadBtn.addEventListener('click', async ()=>{
+    if (!fileInput.files.length) return alert('Choose a zip first');
+    uploadBtn.disabled = true; uploadBtn.textContent = 'Uploading...'; setProgress(6,'Uploading');
+    const fd = new FormData(); fd.append('file', fileInput.files[0]);
+    try{
+        const r = await fetch('/upload',{method:'POST',body:fd});
+        const d = await r.json();
+        if (d.status !== 'Accepted' || !d.workspace){ alert('Upload failed: ' + (d.error||JSON.stringify(d))); uploadBtn.disabled=false; uploadBtn.textContent='Upload & Analyze'; setProgress(0,'Idle'); return }
+        const ws = d.workspace; wsInfo.textContent = ws; setProgress(20,'Queued');
+        // poll until done
+        const interval = 1500;
+        const t = setInterval(async ()=>{ const done = await pollStatus(ws); if(done){ clearInterval(t); uploadBtn.disabled=false; uploadBtn.textContent='Upload & Analyze'; } }, interval);
+    }catch(e){ alert('Upload error: '+e); uploadBtn.disabled=false; uploadBtn.textContent='Upload & Analyze'; setProgress(0,'Idle') }
+});
+
+// quick action hooks removed (buttons were removed from UI)
+
+</script>
+</body>
+</html>
