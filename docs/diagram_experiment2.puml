@@ -1,0 +1,107 @@
+@startuml agent_compact_with_outputs
+skinparam dpi 96
+skinparam Shadowing false
+skinparam padding 6
+skinparam defaultFontSize 11
+skinparam classFontSize 11
+skinparam classBorderThickness 1
+skinparam classAttributeIconSize 0
+skinparam nodesep 8
+skinparam ranksep 10
+skinparam ArrowColor #444444
+skinparam monochrome true
+
+left to right direction
+
+title Agent System - Compact Overview (with outputs)
+
+' Classes with main public methods (concise)
+class FlaskApp {
+  +run_command()
+  +handle_file_upload()
+  +upload_file_route()
+  +run_usability_checks()
+  +run_documentation_checks()
+}
+
+class LCPipeline {
+  +ask_llm()
+  +run_pipeline()
+}
+
+class DynamicTester {
+  +run_cpp_tests()
+  +run_generated_tests()
+  +try_qmake_build()
+  +try_cmake_build()
+}
+
+class AnalyzerCPP {
+  +analyze_cpp()
+  +extract_snippets()
+}
+
+class HFTestGenerator {
+  +generate_tests()
+}
+
+class ReasoningModule {
+  +generate_fix_suggestion()
+  +run_reasoning_on_report()
+}
+
+' Outputs / artifacts produced by modules
+artifact "analysis_report_cpp.txt" as AR_CPP
+artifact "analysis_report_py.txt" as AR_PY
+artifact "bug_snippets_cpp.txt" as SNIPPETS_CPP
+artifact "dynamic_analysis_report.json" as DYN_JSON
+artifact "dynamic_analysis_report.txt" as DYN_TXT
+artifact "generated_tests.json" as GEN_TESTS
+artifact "all_patches.diff" as PATCHES
+artifact "status.json / status.txt" as STATUS
+artifact "env_debug.json" as ENV_DBG
+
+' Grouping to reduce diagram width
+package "Agent (modules)" {
+  FlaskApp
+  LCPipeline
+  DynamicTester
+  AnalyzerCPP
+  HFTestGenerator
+  ReasoningModule
+}
+
+' Relationships (module interactions)
+FlaskApp --> LCPipeline : triggers
+FlaskApp --> HFTestGenerator : requests tests
+FlaskApp --> DynamicTester : run tests
+FlaskApp --> AnalyzerCPP : run static analysis
+
+LCPipeline --> HFTestGenerator : uses
+LCPipeline ..> ReasoningModule : reasoning
+DynamicTester --> AnalyzerCPP : reads reports
+AnalyzerCPP --> HFTestGenerator : provides snippets
+HFTestGenerator --> DynamicTester : tests.json
+
+' Producers -> outputs (writes)
+AnalyzerCPP --> AR_CPP : writes
+AnalyzerCPP --> SNIPPETS_CPP : extracts
+LCPipeline --> PATCHES : writes
+HFTestGenerator --> GEN_TESTS : writes
+DynamicTester --> DYN_JSON : writes
+DynamicTester --> DYN_TXT : writes
+DynamicTester --> STATUS : writes
+FlaskApp --> ENV_DBG : writes
+ReasoningModule --> PATCHES : suggests
+
+' Consumers -> outputs (reads/uses)
+LCPipeline ..> SNIPPETS_CPP : reads
+DynamicTester ..> GEN_TESTS : executes
+FlaskApp ..> STATUS : reads
+
+note right
+  Compact diagram with artifacts showing primary outputs.
+  Use the PNG/SVG URLs in the README to render for slides.
+end note
+
+@enduml

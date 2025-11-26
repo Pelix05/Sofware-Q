@@ -1,0 +1,20 @@
+rules:
+  - id: python-eval-detection
+    pattern: eval(...)
+    message: Avoid using `eval()` — prefer safer parsing or ast.literal_eval
+    languages: [python]
+    severity: ERROR
+
+  - id: python-subprocess-shell-unsafe
+    pattern-either:
+      - pattern: subprocess.Popen(..., shell=True)
+      - pattern: subprocess.run(..., shell=True)
+    message: Avoid `shell=True` with untrusted input; sanitize or use list args
+    languages: [python]
+    severity: WARNING
+
+  - id: cpp-system-call
+    pattern: system(...)
+    message: Avoid direct `system()` calls — prefer exec or safer APIs
+    languages: [cpp]
+    severity: WARNING

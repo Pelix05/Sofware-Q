@@ -1,0 +1,7 @@
+bandit
+flake8
+mypy
+semgrep
+pytest
+coverage
+pytest-cov

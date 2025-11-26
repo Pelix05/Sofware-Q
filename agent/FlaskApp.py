@@ -520,6 +520,109 @@ def upload_file_route():
             except Exception:
                 result['dynamic'] = dyn_out or ''
 
+            # --- UI left-bottom concise summary ---
+            # Build a compact, human-friendly summary for the UI (left-bottom)
+            ui_left = {'static': '', 'dynamic': ''}
+            try:
+                # Static: prefer workspace-local static report if present
+                static_txt = ''
+                if (ws_path / 'analysis_report_cpp.txt').exists():
+                    static_txt = (ws_path / 'analysis_report_cpp.txt').read_text(encoding='utf-8', errors='ignore')
+                elif static_out:
+                    static_txt = static_out
+                # Extract key summary: look for 'Found N' pattern or 'error-level' mention
+                static_count = None
+                top_issues = []
+                if static_txt:
+                    m = re.search(r'Found\s+(\d+)\s+C/C\+\+\s+error-level', static_txt)
+                    if not m:
+                        m = re.search(r'Found\s+(\d+)\s+error', static_txt, re.IGNORECASE)
+                    if m:
+                        static_count = int(m.group(1))
+                    # grab first few lines that look like issues (contain 'error' or 'warning')
+                    for ln in static_txt.splitlines():
+                        if len(top_issues) >= 3:
+                            break
+                        if 'error' in ln.lower() or 'fatal' in ln.lower() or 'warning' in ln.lower():
+                            clean = ln.strip()
+                            if clean and clean not in top_issues:
+                                top_issues.append(clean)
+                if static_count is not None:
+                    ui_left['static'] = f"Static: {static_count} C/C++ error-level issues"
+                else:
+                    # fallback: provide short summary with bytes/lines
+                    if static_txt:
+                        ui_left['static'] = f"Static: {min(len(static_txt.splitlines()), 5)} lines of findings"
+                    else:
+                        ui_left['static'] = 'Static: no report'
+                if top_issues:
+                    ui_left['static_details'] = top_issues
+            except Exception:
+                ui_left['static'] = 'Static: N/A'
+
+            try:
+                # Dynamic: prefer structured JSON tests if available
+                dyn_summary = ''
+                dyn_rows = []
+                if dyn_json and isinstance(dyn_json, dict):
+                    tests = dyn_json.get('tests', [])
+                    pass_c = sum(1 for t in tests if str(t.get('status','')).upper() == 'PASS')
+                    fail_c = sum(1 for t in tests if str(t.get('status','')).upper() == 'FAIL')
+                    skip_c = sum(1 for t in tests if str(t.get('status','')).upper() == 'SKIPPED')
+                    dyn_summary = f"Dynamic: {pass_c} PASS, {fail_c} FAIL, {skip_c} SKIPPED"
+                    # list failing test names (up to 5)
+                    fails = [t.get('test') for t in tests if str(t.get('status','')).upper() == 'FAIL']
+                    if fails:
+                        ui_left['dynamic_failures'] = fails[:5]
+                else:
+                    # fallback: parse cleaned dynamic text lines that start with [+]/[-]/[!]
+                    lines = (dyn_clean or '').splitlines()
+                    pass_c = sum(1 for l in lines if l.strip().startswith('[+]'))
+                    fail_c = sum(1 for l in lines if l.strip().startswith('[-]'))
+                    skip_c = sum(1 for l in lines if l.strip().startswith('[!]'))
+                    dyn_summary = f"Dynamic: {pass_c} PASS, {fail_c} FAIL, {skip_c} SKIPPED"
+                ui_left['dynamic'] = dyn_summary
+            except Exception:
+                ui_left['dynamic'] = 'Dynamic: N/A'
+
+            result['ui_left'] = ui_left
+
+            # --- White-box & Black-box concise summaries ---
+            try:
+                white_box = {
+                    'summary': ui_left.get('static') if isinstance(ui_left, dict) else (static_out or 'Static: N/A'),
+                    'details': ui_left.get('static_details', []) if isinstance(ui_left, dict) else [],
+                    'usability': {}
+                }
+                if isinstance(usability, dict):
+                    white_box['usability'] = {
+                        'readme_exists': bool(usability.get('readme_exists')),
+                        'readme_length': int(usability.get('readme_length', 0)) if usability.get('readme_length') is not None else 0,
+                        'suggestions': (usability.get('suggestions') or [])[:3]
+                    }
+                else:
+                    white_box['usability'] = {}
+
+                black_box = {
+                    'summary': ui_left.get('dynamic') if isinstance(ui_left, dict) else (dyn_out or 'Dynamic: N/A'),
+                    'failures': ui_left.get('dynamic_failures', []) if isinstance(ui_left, dict) else [],
+                    'generated_tests_count': 0
+                }
+                if result.get('generated_tests'):
+                    try:
+                        if isinstance(result['generated_tests'], list):
+                            black_box['generated_tests_count'] = len(result['generated_tests'])
+                        elif isinstance(result['generated_tests'], dict):
+                            black_box['generated_tests_count'] = len(result['generated_tests'].get('tests', []))
+                    except Exception:
+                        black_box['generated_tests_count'] = 0
+
+                result['white_box'] = white_box
+                result['black_box'] = black_box
+            except Exception:
+                result['white_box'] = {'summary': 'N/A', 'details': []}
+                result['black_box'] = {'summary': 'N/A', 'failures': []}
+
             with open(ws_path / 'result.json', 'w', encoding='utf-8') as fh:
                 json.dump(result, fh, ensure_ascii=False, indent=2)
             # Create a submission package (zip) inside the workspace

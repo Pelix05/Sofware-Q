@@ -13,6 +13,8 @@ import time
 import json
 import platform
 import subprocess
+import shutil
+import ast
 
 # === Paths ===
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,6 +24,9 @@ REPORT_FILE_JSON = BASE_DIR / "dynamic_analysis_report.json"
 CPP_REPO = BASE_DIR / "cpp_project" / "puzzle-2"
 PY_REPO = BASE_DIR / "python_repo"
 PUZZLE_CHALLENGE = PY_REPO / "puzzle-challenge"
+
+# Global flag to control sanitizer-enabled builds (can be toggled from CLI)
+USE_SANITIZERS = False
 
 
 def parse_args():
@@ -33,6 +38,7 @@ def parse_args():
     p.add_argument("--out-dir", type=str, help="Optional output directory to write dynamic_analysis_report(.json/.txt)")
     p.add_argument("--qt-includes", type=str, help="Optional Qt include root(s). Semicolon-separated on Windows.")
     p.add_argument("--qt-libs", type=str, help="Optional Qt lib root(s). Semicolon-separated on Windows.")
+    p.add_argument("--use-sanitizers", action="store_true", help="Build C/C++ projects with sanitizers (AddressSanitizer/UBSan) when supported.")
     return p.parse_args()
 
 # NOTE: don't insert the puzzle-challenge into sys.path here because PUZZLE_CHALLENGE
@@ -58,6 +64,57 @@ def run_command(cmd, cwd=None, input_text=None):
         return False, str(e)
 
 
+def supports_cxx17():
+    """Quick, best-effort check whether a C++17-capable compiler is available.
+
+    Tries common compilers (g++, clang++, cl) by compiling a tiny test
+    that uses <optional>. Returns (bool, message).
+    """
+    try:
+        # Try g++ and clang++ first
+        for comp in ('g++', 'clang++'):
+            path = shutil.which(comp)
+            if not path:
+                continue
+            try:
+                td = tempfile.mkdtemp()
+                src = Path(td) / 'test.cpp'
+                out_exec = Path(td) / ('test.exe' if os.name == 'nt' else 'a.out')
+                src.write_text('#include <optional>\nint main(){ std::optional<int> x; return 0; }\n', encoding='utf-8')
+                cmd = f'"{path}" -std=c++17 -x c++ "{str(src)}" -o "{str(out_exec)}"'
+                ok, out = run_command(cmd, cwd=td)
+                shutil.rmtree(td, ignore_errors=True)
+                if ok:
+                    return True, f"{comp} supports C++17"
+            except Exception:
+                try:
+                    shutil.rmtree(td, ignore_errors=True)
+                except Exception:
+                    pass
+        # On Windows try MSVC 'cl' with /std:c++17 if available
+        if os.name == 'nt':
+            clp = shutil.which('cl')
+            if clp:
+                try:
+                    td = tempfile.mkdtemp()
+                    src = Path(td) / 'test.cpp'
+                    src.write_text('#include <optional>\nint main(){ std::optional<int> x; return 0; }\n', encoding='utf-8')
+                    # cl writes output files in cwd; we rely on return code
+                    cmd = f'cl /nologo /std:c++17 "{str(src)}"'
+                    ok, out = run_command(cmd, cwd=td)
+                    shutil.rmtree(td, ignore_errors=True)
+                    if ok:
+                        return True, 'cl supports C++17'
+                except Exception:
+                    try:
+                        shutil.rmtree(td, ignore_errors=True)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+    return False, 'No compiler with C++17 support detected'
+
+
 def _find_executable(root: Path):
     """Search for a likely executable produced by a build in the repo or build dirs."""
     exes = list(root.rglob("*.exe"))
@@ -75,6 +132,97 @@ def _find_executable(root: Path):
             if exes:
                 return str(exes[0])
     return None
+
+
+def _translate_command_for_windows(cmd: str, exec_cwd: str = None):
+    """Translate simple Unix-like commands into a PowerShell-invoked command string
+    so generated_tests using `ls`, `grep`, `./prog` and similar will work on Windows.
+    This is a pragmatic translator (not a full shell). When complex commands are
+    encountered the original command is returned unchanged.
+    """
+    if not isinstance(cmd, str):
+        return cmd
+    s = cmd.strip()
+    # quick no-op for empty
+    if not s:
+        return cmd
+
+    # Replace leading './' path runs with Windows style '.\' and if it's an executable
+    if s.startswith('./'):
+        # prefer PowerShell invocation for executables (robust)
+        if s.endswith('.exe') or re.search(r'\./[^\s]+\.(exe|bat|cmd)$', s):
+            path = s.replace('./', '.\\')
+            ps = f"& '{path}'"
+            return f"powershell -NoProfile -Command \"{ps}\""
+        s = s.replace('./', '.\\')
+
+    # If the command references likely_exec_names, replace with discovered exe
+    if '${likely_exec_names' in s:
+        try:
+            base = Path(exec_cwd) if exec_cwd else Path.cwd()
+            exe = _find_executable(base)
+            if exe:
+                s = s.replace('${likely_exec_names[0]}', str(Path(exe)))
+            else:
+                s = s.replace('${likely_exec_names[0]}', '')
+        except Exception:
+            s = s.replace('${likely_exec_names[0]}', '')
+
+    # Translate simple `ls` existence checks into PowerShell Test-Path with exit code
+    m = re.match(r'^ls\s+-l\s+(.+)$', s)
+    if m:
+        path = m.group(1).strip()
+        # produce a PowerShell command that exits non-zero when missing
+        ps = f"if (Test-Path -LiteralPath '{path}') {{ Get-ChildItem -LiteralPath '{path}' -Force; exit 0 }} else {{ Write-Error 'missing'; exit 1 }}"
+        return f"powershell -NoProfile -Command \"{ps}\""
+
+    m2 = re.match(r'^ls\s+(.+)$', s)
+    if m2:
+        path = m2.group(1).strip()
+        ps = f"if (Test-Path -LiteralPath '{path}') {{ Get-ChildItem -LiteralPath '{path}' -Force; exit 0 }} else {{ Write-Error 'missing'; exit 1 }}"
+        return f"powershell -NoProfile -Command \"{ps}\""
+
+    # Translate simple grep usages: `grep 'pat' file` -> Select-String, exit 0 if found
+    m3 = re.match(r"^grep\s+-q\s+'?(.*?)'?\s+(.+)$", s)
+    if m3:
+        pat = m3.group(1)
+        path = m3.group(2).strip()
+        ps = f"if (Select-String -Pattern '{pat}' -Path '{path}' -SimpleMatch -Quiet) {{ exit 0 }} else {{ exit 1 }}"
+        return f"powershell -NoProfile -Command \"{ps}\""
+
+    m4 = re.match(r"^grep\s+'?(.*?)'?\s+(.+)$", s)
+    if m4:
+        pat = m4.group(1)
+        path = m4.group(2).strip()
+        ps = f"if (Select-String -Pattern '{pat}' -Path '{path}' -SimpleMatch -Quiet) {{ Select-String -Pattern '{pat}' -Path '{path}'; exit 0 }} else {{ exit 1 }}"
+        return f"powershell -NoProfile -Command \"{ps}\""
+
+    # Replace `./release/app.exe` style in the middle of command and run via PowerShell if it's an .exe invocation
+    if './' in s and s.strip().endswith('.exe'):
+        s2 = s.replace('./', '.\\')
+        # ensure we run the executable with PowerShell to respect .\ relative paths
+        ps = f"& '{s2}'"
+        return f"powershell -NoProfile -Command \"{ps}\""
+    elif './' in s:
+        s = s.replace('./', '.\\')
+
+    # Translate make -> mingw32-make when available
+    if re.search(r'\bmake\b', s):
+        # if mingw32-make exists use it
+        mm = shutil.which('mingw32-make')
+        if mm:
+            s = re.sub(r'\bmake\b', 'mingw32-make', s)
+            return s
+        # if cmake exists, try to convert make -C dir all into cmake --build
+        cm = shutil.which('cmake')
+        m = re.search(r'make\s+-C\s+([^\s]+)\s+(.*)', s)
+        if cm and m:
+            build_dir = m.group(1).replace('/', '\\')
+            # try to build the directory using cmake
+            return f"cmake --build {build_dir} -- -j1"
+
+    # Fallback: return the modified string (may still be a valid cmd.exe command)
+    return s
 
 
 def run_generated_tests(repo: Path, out_dir: Path = None):
@@ -119,17 +267,80 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
         name = t.get('name') or t.get('title') or t.get('test') or 'Generated Test'
         cmds = t.get('commands') or t.get('command') or []
         expected = t.get('expected')
-        # normalize commands to list
+        # Normalize commands to list
         if isinstance(cmds, str):
             cmds = [cmds]
         if not isinstance(cmds, list):
             results.append({"test": name, "status": "FAIL", "detail": f"Invalid commands field: {type(cmds)}"})
             continue
 
+        # If all commands are comments or empty, skip the test immediately
+        try:
+            all_comments = all((str(c).strip().startswith('#') or str(c).strip() == '') for c in cmds)
+        except Exception:
+            all_comments = False
+        if all_comments:
+            results.append({"test": name, "status": "SKIPPED", "detail": "No executable commands (all lines are comments or empty)."})
+            continue
+
         combined_output = []
         overall_ok = True
+        # Choose execution cwd: prefer the folder that contains build/project files
+        # (e.g. a .pro file for qmake or a CMakeLists.txt). If a built executable
+        # exists, prefer its parent directory so './release/app.exe' style commands
+        # run correctly. Fall back to repo/cpp_project or repo root.
+        exec_cwd = None
+        try:
+            if repo is not None:
+                repo_path = Path(repo)
+                # prefer a nested 'cpp_project' folder when present
+                candidate = repo_path / 'cpp_project'
+                search_root = candidate if candidate.exists() else repo_path
+
+                # look for qmake .pro files first
+                pro_files = list(search_root.rglob('*.pro'))
+                if pro_files:
+                    exec_cwd = str(pro_files[0].parent)
+                else:
+                    # then look for CMakeLists.txt
+                    cmake_files = list(search_root.rglob('CMakeLists.txt'))
+                    if cmake_files:
+                        exec_cwd = str(cmake_files[0].parent)
+                    else:
+                        # if a built executable already exists, run in its folder
+                        exe_path = _find_executable(search_root)
+                        if exe_path:
+                            exec_cwd = str(Path(exe_path).parent)
+                        else:
+                            # final fallback: use the cpp_project folder if present,
+                            # otherwise the repo root
+                            exec_cwd = str(search_root)
+            else:
+                exec_cwd = None
+        except Exception:
+            exec_cwd = str(repo) if repo else None
         for cmd in cmds:
-            ok, out = run_command(cmd, cwd=str(repo) if repo else None)
+            # Skip commands that are comments (start with '#') or empty
+            try:
+                cmd_text = str(cmd)
+            except Exception:
+                cmd_text = ''
+            if cmd_text.strip().startswith('#') or cmd_text.strip() == '':
+                combined_output.append(f"$ {cmd_text}\n<skipped comment or empty command>")
+                # do not mark as failure; continue to next command
+                continue
+
+            # If we're on Windows, try to translate common Unix commands into
+            # PowerShell-invoked commands so generated_tests.json (often Unix-style)
+            # execute correctly.
+            run_cmd = cmd
+            try:
+                if os.name == 'nt' and isinstance(cmd, str):
+                    run_cmd = _translate_command_for_windows(cmd, exec_cwd)
+            except Exception:
+                run_cmd = cmd
+
+            ok, out = run_command(run_cmd, cwd=exec_cwd)
             combined_output.append(f"$ {cmd}\n{out}")
             if not ok:
                 overall_ok = False
@@ -176,6 +387,101 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
         results.append({"test": name, "status": status, "detail": detail})
 
     return results
+
+
+def _write_temp_generated_tests(out_dir: Path, existing: list, new: list):
+    """Helper: write combined generated_tests.json to out_dir, returning path and backup content."""
+    gj = Path(out_dir) / 'generated_tests.json'
+    backup = None
+    try:
+        if gj.exists():
+            backup = json.loads(gj.read_text(encoding='utf-8'))
+    except Exception:
+        backup = None
+    combined = []
+    if isinstance(existing, list):
+        combined.extend(existing)
+    if isinstance(new, list):
+        combined.extend(new)
+    try:
+        (Path(out_dir)).mkdir(parents=True, exist_ok=True)
+        gj.write_text(json.dumps(combined, indent=2), encoding='utf-8')
+    except Exception:
+        pass
+    return gj, backup
+
+
+def generate_equivalence_tests(repo: Path, lang: str, out_dir: Path):
+    """Generate simple equivalence-class tests.
+
+    Python: discover top-level functions and create small script tests that call
+    them with representative inputs (int/float/str/empty/long) to check behavior.
+
+    C++: best-effort: if an executable is present, generate command-line tests
+    invoking it with representative args. GUI apps may hang; these tests are
+    conservative and may be skipped if no suitable executable is found.
+    """
+    tests = []
+    try:
+        out_dir = Path(out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        if lang == 'py' or lang == 'python':
+            # scan python files for top-level functions
+            for pyf in repo.rglob('*.py'):
+                # skip tests folder and __init__ helper files
+                if 'tests' in pyf.parts or pyf.name.startswith('test_'):
+                    continue
+                try:
+                    src = pyf.read_text(encoding='utf-8', errors='ignore')
+                    tree = ast.parse(src)
+                except Exception:
+                    continue
+                module_name = None
+                try:
+                    module_name = str(pyf.relative_to(repo)).replace('\\','/').rsplit('.py',1)[0].replace('/','.')
+                except Exception:
+                    module_name = pyf.stem
+
+                for node in tree.body:
+                    if isinstance(node, ast.FunctionDef):
+                        func_name = node.name
+                        # generate small set of representative arg tuples
+                        arg_sets = [[], [0], [-1], [10000000000], [''], ['a'*500], [None]]
+                        # create a script per arg set
+                        for i, args in enumerate(arg_sets[:4]):
+                            script_path = out_dir / f'equiv_{pyf.stem}_{func_name}_{i}.py'
+                            try:
+                                with open(script_path, 'w', encoding='utf-8') as sf:
+                                    sf.write('import sys\n')
+                                    sf.write(f'from {module_name} import {func_name}\n')
+                                    sf.write('import json\n')
+                                    sf.write('try:\n')
+                                    # prepare arg representation
+                                    arg_repr = ', '.join(repr(a) for a in args)
+                                    sf.write(f'    res = {func_name}({arg_repr})\n')
+                                    sf.write('    print("EQUIV_OK", res)\n')
+                                    sf.write('    sys.exit(0)\n')
+                                    sf.write('except Exception as e:\n')
+                                    sf.write('    print("EQUIV_EXC", e)\n')
+                                    sf.write('    sys.exit(1)\n')
+                                tests.append({'name': f'equiv:{pyf.stem}:{func_name}:{i}', 'title': f'Equiv {pyf.stem}.{func_name} #{i}', 'commands': [f'py -3 "{str(script_path)}"'], 'expected': ''})
+                            except Exception:
+                                continue
+        elif lang == 'cpp' or lang == 'c++':
+            # find an executable to run
+            exe = _find_executable(repo)
+            if exe:
+                # create several invocations with different args
+                arg_sets = [[], ['0'], ['-1'], ['10000000000'], [''], ['a'*200]]
+                for i, args in enumerate(arg_sets[:5]):
+                    cmd = f'"{exe}"' + ('' if not args else ' ' + ' '.join(args))
+                    tests.append({'name': f'equiv:exe:{i}', 'title': f'Equiv exe {Path(exe).name} #{i}', 'commands': [cmd], 'expected': ''})
+            else:
+                # no exe found: skip
+                return []
+    except Exception:
+        return []
+    return tests
 
 
 def try_qmake_build(repo: Path):
@@ -333,7 +639,19 @@ def try_qmake_build(repo: Path):
         prev_qt_bypass = None
 
     # Run qmake in the .pro's directory to ensure moc/rcc are executed in the right context
-    ok, out = run_command(f"qmake {str(pro_to_use)}", cwd=str(pro_to_use.parent))
+    # If sanitizers are requested and platform supports them, instruct qmake to add sanitizer flags.
+    try:
+        is_windows = os.name == 'nt'
+    except Exception:
+        is_windows = False
+    if USE_SANITIZERS and not is_windows:
+        san_flags = "-fsanitize=address,undefined -fno-omit-frame-pointer -g"
+        # Pass sanitizer flags to qmake via QMAKE_CXXFLAGS addition
+        qmake_cmd = f"qmake QMAKE_CXXFLAGS+=' {san_flags} ' {str(pro_to_use)}"
+    else:
+        qmake_cmd = f"qmake {str(pro_to_use)}"
+
+    ok, out = run_command(qmake_cmd, cwd=str(pro_to_use.parent))
     if not ok:
         return False, out
     # try make variants in the same directory where qmake ran
@@ -366,10 +684,23 @@ def try_cmake_build(repo: Path):
     """Run cmake configure+build in a build subdir and return (success, exe_or_output)."""
     build_dir = repo / "build"
     # configure
-    ok, out = run_command(f"cmake -S . -B {str(build_dir)} -G \"MinGW Makefiles\"", cwd=str(repo))
+    try:
+        is_windows = os.name == 'nt'
+    except Exception:
+        is_windows = False
+    cmake_cmd = f"cmake -S . -B {str(build_dir)} -G \"MinGW Makefiles\""
+    # If sanitizer builds requested and platform supports them, pass flags to CMake
+    if USE_SANITIZERS and not is_windows:
+        san_flags = "-fsanitize=address,undefined -fno-omit-frame-pointer -g"
+        cmake_cmd = f"cmake -S . -B {str(build_dir)} -DCMAKE_CXX_FLAGS=\"{san_flags}\" -DCMAKE_EXE_LINKER_FLAGS=\"{san_flags}\""
+
+    ok, out = run_command(cmake_cmd, cwd=str(repo))
     if not ok:
         # Try generic cmake configure without generator
-        ok, out = run_command(f"cmake -S . -B {str(build_dir)}", cwd=str(repo))
+        fallback_cmd = f"cmake -S . -B {str(build_dir)}"
+        if USE_SANITIZERS and not is_windows:
+            fallback_cmd += f" -DCMAKE_CXX_FLAGS=\"{san_flags}\" -DCMAKE_EXE_LINKER_FLAGS=\"{san_flags}\""
+        ok, out = run_command(fallback_cmd, cwd=str(repo))
         if not ok:
             return False, out
     # build
@@ -378,6 +709,71 @@ def try_cmake_build(repo: Path):
         exe = _find_executable(build_dir)
         return True, exe or out2
     return False, out2
+
+
+def run_cpp_unit_tests(search_dirs):
+    """Discover and run C++ unit tests.
+
+    Behavior:
+    - If `ctest` is available and a CTest configuration is present, run `ctest --output-on-failure` in the build dir.
+    - Otherwise search provided directories for executables with 'test' or 'unittest' in the filename and run them.
+    Returns a list of result dicts suitable for inclusion in the final report.
+    """
+    results = []
+    try:
+        # Prefer running ctest if available and useful
+        ctest_path = shutil.which('ctest') or shutil.which('ctest.exe')
+        if ctest_path:
+            # Try to find a build dir that contains CTestTestfile.cmake
+            for d in search_dirs:
+                try:
+                    bd = Path(d)
+                    if not bd.exists():
+                        continue
+                    if (bd / 'CTestTestfile.cmake').exists() or (bd / 'Testing').exists():
+                        ok, out = run_command('ctest --output-on-failure', cwd=str(bd))
+                        results.append({'test': 'ctest', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                        return results
+                except Exception:
+                    continue
+
+        # Fallback: find test executables
+        seen = set()
+        for d in search_dirs:
+            bd = Path(d)
+            if not bd.exists():
+                continue
+            # common subdirs
+            candidates = [bd, bd / 'bin', bd / 'build', bd / 'release', bd / 'debug']
+            for cand in candidates:
+                if not cand.exists():
+                    continue
+                for exe in cand.rglob('*'):
+                    try:
+                        if not exe.is_file():
+                            continue
+                        name = exe.name.lower()
+                        if ('test' in name or 'unittest' in name) and exe.suffix.lower() in ('.exe', ''):
+                            key = str(exe.resolve())
+                            if key in seen:
+                                continue
+                            seen.add(key)
+                            # Decide how to invoke
+                            if os.name == 'nt' and exe.suffix.lower() == '.exe':
+                                ok, out = run_command(str(exe), cwd=str(exe.parent))
+                            else:
+                                # ensure executable bit or run with ./name
+                                if os.access(str(exe), os.X_OK):
+                                    ok, out = run_command(f'./{exe.name}', cwd=str(exe.parent))
+                                else:
+                                    # try as interpreter-less binary (may still run)
+                                    ok, out = run_command(str(exe), cwd=str(exe.parent))
+                            results.append({'test': exe.name, 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                    except Exception as e:
+                        results.append({'test': f'discover:{exe}', 'status': 'FAIL', 'detail': str(e)})
+        return results
+    except Exception as e:
+        return [{'test': 'cpp_unit_discovery', 'status': 'FAIL', 'detail': str(e)}]
 
 # === PATCH HANDLER ===
 def apply_patches_from_dir(target_repo, patch_dir):
@@ -477,6 +873,16 @@ def run_cpp_tests():
     # If the project uses qmake or cmake, prefer to invoke the build system
     # so the correct Qt include/link flags are used.
     built_exe = None
+    # Auto-skip builds when host compiler lacks C++17 support to avoid noisy failures
+    try:
+        ok_cxx17, cxx17_msg = supports_cxx17()
+        if not ok_cxx17:
+            results.append({"test": "C++ compile", "status": "SKIPPED", "detail": f"Skipped: host compiler lacks C++17 support. {cxx17_msg}."})
+            results.append({"test": "C++ runtime", "status": "SKIPPED", "detail": "Skipped runtime tests because host compiler does not support C++17."})
+            return results
+    except Exception:
+        # If detection fails for any reason, proceed with normal build attempt
+        pass
     try:
         # prefer .pro/qmake (search recursively; projects may place .pro in subfolders)
         pro_files = list(CPP_REPO.rglob("*.pro"))
@@ -502,6 +908,20 @@ def run_cpp_tests():
             results.append({"test": "C++ runtime", "status": "FAIL", "detail": output})
         else:
             results.append({"test": "C++ runtime", "status": "PASS", "detail": output})
+        # After running the main executable, also attempt to run any unit tests produced by the build
+        try:
+            search_dirs = [CPP_REPO, CPP_REPO / 'build', CPP_REPO / 'release', CPP_REPO / 'debug']
+            # include parent of built_exe as a likely location
+            try:
+                be = Path(built_exe)
+                search_dirs.insert(0, be.parent)
+            except Exception:
+                pass
+            unit_results = run_cpp_unit_tests(search_dirs)
+            if unit_results:
+                results.extend(unit_results)
+        except Exception:
+            pass
         return results
 
     # Fallback: manual g++ compile with optional QT_INCLUDES / QT_LIBS
@@ -778,6 +1198,14 @@ def run_cpp_tests():
         results.append({"test": "C++ runtime", "status": "FAIL", "detail": output})
     else:
         results.append({"test": "C++ runtime", "status": "PASS", "detail": output})
+    # After manual compile/run, attempt to discover and run unit tests in common build dirs
+    try:
+        search_dirs = [CPP_REPO, CPP_REPO / 'build', CPP_REPO / 'release', CPP_REPO / 'debug']
+        unit_results = run_cpp_unit_tests(search_dirs)
+        if unit_results:
+            results.extend(unit_results)
+    except Exception:
+        pass
     return results
 
 # === MOCK RESOURCES ===
@@ -934,6 +1362,9 @@ def run_dynamic_code_execution_tests():
 # === MAIN ===
 def main():
     args = parse_args()
+    # Respect CLI flag or environment to enable sanitizer-enabled builds
+    global USE_SANITIZERS
+    USE_SANITIZERS = bool(getattr(args, 'use_sanitizers', False)) or os.environ.get('USE_SANITIZERS', '') == '1'
     # mark start timestamp for duration calculation
     globals()['__dynamic_tester_start_ts__'] = time.time()
 
@@ -1009,7 +1440,39 @@ def main():
     # Run any LLM-generated tests found in the workspace (generated_tests.json)
     try:
         repo_for_generated = Path(CPP_REPO) if args.cpp else Path(PY_REPO)
+        # Generate equivalence-class tests and merge with any existing generated tests
+        try:
+            eq_tests = generate_equivalence_tests(repo_for_generated, 'cpp' if args.cpp else 'py', out_dir)
+        except Exception:
+            eq_tests = []
+
+        # If there are equivalence tests, merge them into workspace generated_tests.json temporarily
+        bak = None
+        gj_path = Path(out_dir) / 'generated_tests.json'
+        try:
+            existing = []
+            if gj_path.exists():
+                try:
+                    existing = json.loads(gj_path.read_text(encoding='utf-8'))
+                except Exception:
+                    existing = []
+            if eq_tests:
+                # write combined to out_dir/generated_tests.json
+                _write_temp_generated_tests(out_dir, existing, eq_tests)
+        except Exception:
+            pass
+
         gen_tests = run_generated_tests(repo_for_generated, out_dir=out_dir)
+        # restore original generated_tests.json if we modified it
+        try:
+            if eq_tests and gj_path.exists():
+                # attempt to restore previous contents
+                if 'existing' in locals():
+                    gj_path.write_text(json.dumps(existing, indent=2), encoding='utf-8')
+                else:
+                    gj_path.unlink(missing_ok=True)
+        except Exception:
+            pass
         # Append generated tests to post_tests so they appear in final report
         if isinstance(gen_tests, list):
             post_tests += gen_tests
@@ -1122,61 +1585,133 @@ def main():
     # --- UI-friendly summary generation ---
     def _make_ui_summary(struct):
         tests = struct.get('tests', [])
-        # categorize tests into standard categories: Functional, Usability, Documentation, Regression/Other
+
+        # Friendly descriptions for common tests so reports explain "what we test"
+        TEST_DESCRIPTIONS = {
+            'C++ runtime': 'Builds and runs the C++ binary (checks for crashes and expected behavior).',
+            'C++ compile': 'Attempts compilation of C++ sources (fallback when build system not available).',
+            'Resource Management': 'Verifies that temporary resources (files, handles) are managed correctly.',
+            'Concurrency': 'Executes simple threaded tasks to detect obvious deadlocks or exceptions.',
+            'Boundary Test': 'Feeds extreme or malformed inputs to check boundary handling.',
+            'Env Test': 'Validates that required environment variables are set for runtime.',
+            'Dynamic Code Test': 'Runs a small dynamic code execution check to ensure sandboxing and error handling.',
+            'Generated Tests': 'LLM-generated integration tests for this workspace (commands supplied in generated_tests.json).',
+            'pytest_suite': 'Runs Python unit tests with pytest if present.',
+        }
+
+        # Normalize tests into rows and attach descriptions
         rows = []
         for t in tests:
             name = str(t.get('test', '')).strip()
             status = str(t.get('status', '')).upper()
             detail = str(t.get('detail', '') or '').strip()
-            ln = name.lower()
-            # precise categorization rules to avoid over-labeling as Functional
-            if any(k in ln for k in ('compile', 'runtime', 'resource')):
-                cat = 'Functional'
-            elif any(k in ln for k in ('usability', 'ux', 'usage', 'learn', 'user experience', 'ease')):
-                cat = 'Usability'
-            elif any(k in ln for k in ('doc', 'readme', 'manual', 'documentation', 'docs', 'user manual')):
-                cat = 'Documentation'
-            elif any(k in ln for k in ('pytest', 'regression', 'boundary', 'concurrency', 'env test', 'dynamic code', 'dynamic')):
-                cat = 'Regression/Other'
-            else:
-                cat = 'Regression/Other'
-            rows.append({'category': cat, 'test': name, 'status': status, 'detail': detail})
+            # Map description by exact name or prefix
+            desc = TEST_DESCRIPTIONS.get(name)
+            if not desc:
+                for k, v in TEST_DESCRIPTIONS.items():
+                    if name.startswith(k):
+                        desc = v
+                        break
+            if not desc:
+                desc = 'Automatic or workspace-provided test. See details for commands and output.'
+            rows.append({'test': name, 'status': status, 'detail': detail, 'description': desc})
 
-        # build a compact text summary
         pass_count = sum(1 for r in rows if r['status'] == 'PASS')
         fail_count = sum(1 for r in rows if r['status'] == 'FAIL')
         skip_count = sum(1 for r in rows if r['status'] == 'SKIPPED')
         summary_text = f"Summary: {pass_count} PASS, {fail_count} FAIL, {skip_count} SKIPPED"
 
-        # Build HTML table with inline CSS for immediate readability and wrapping
+        # Attempt to include static analysis summary if present
+        static_summary = ''
+        try:
+            possible_static = Path(struct.get('repo', '')).parent / 'analysis_report_cpp.txt'
+            if not possible_static.exists():
+                possible_static = Path(__file__).resolve().parent.parent / 'analysis_report_cpp.txt'
+            if possible_static.exists():
+                txt = possible_static.read_text(encoding='utf-8', errors='ignore')
+                # Extract first lines and any "Found X" pattern
+                m = re.search(r'Found\s+(\d+)\s+C/C\+\+\s+error-level issues', txt)
+                if m:
+                    static_summary = f"Static C/C++ issues: {m.group(1)} error-level issues."
+                else:
+                    static_summary = '\n'.join(txt.splitlines()[:6])
+        except Exception:
+            static_summary = ''
+
+        # Build an HTML report with a short "What we tested" section and a results table
         css = '''<style>
-        table.test-report {border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; table-layout: fixed;}
-        table.test-report th, table.test-report td {border: 1px solid #ddd; padding: 8px;}
-        table.test-report th {background-color: #f4f6f8; text-align: left;}
+        body {font-family: Arial, Helvetica, sans-serif;}
+        .summary {margin-bottom: 1em}
+        .what {background:#f7f9fc;padding:10px;border-radius:6px;margin-bottom:1em}
+        table.test-report {border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; table-layout: fixed}
+        table.test-report th, table.test-report td {border: 1px solid #ddd; padding: 8px}
+        table.test-report th {background-color: #f4f6f8; text-align: left}
         tr.pass {background-color: #e6ffed}
         tr.fail {background-color: #ffecec}
         tr.skip {background-color: #fff7e6}
-        td.detail {max-width: 60ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere;}
+        td.detail {max-width: 60ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}
         td.test {max-width: 40ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}
-        .badge {font-weight: bold; padding: 2px 6px; border-radius: 4px;}
+        .badge {font-weight: bold; padding: 2px 6px; border-radius: 4px}
         .badge.pass {color: #006400}
         .badge.fail {color: #8b0000}
         .badge.skip {color: #8a6d00}
         </style>'''
 
-        html = [css, '<h2>Test Report</h2>', f'<p>{summary_text}</p>', '<table class="test-report">', '<thead><tr><th style="width:4%">#</th><th style="width:18%">Category</th><th style="width:38%">Test</th><th style="width:10%">Status</th><th style="width:30%">Details</th></tr></thead>', '<tbody>']
         import html as _html
+        html = [css, f'<h2>Dynamic Analysis Report</h2>', f'<div class="summary"><strong>{_html.escape(summary_text)}</strong></div>']
+        if static_summary:
+            html.append(f'<div class="summary"><strong>Static analysis:</strong> {_html.escape(static_summary)}</div>')
+
+        # What we tested
+        html.append('<div class="what"><h3>What we tested</h3><ul>')
+        seen = set()
+        for r in rows:
+            if r['test'] in seen:
+                continue
+            seen.add(r['test'])
+            html.append(f"<li><strong>{_html.escape(r['test'])}</strong>: {_html.escape(r['description'])}</li>")
+        html.append('</ul></div>')
+
+        # Results table
+        html.append('<table class="test-report"><thead><tr><th style="width:4%">#</th><th style="width:30%">Test</th><th style="width:10%">Status</th><th style="width:56%">Details</th></tr></thead><tbody>')
         for i, r in enumerate(rows, start=1):
             cls = 'pass' if r['status'] == 'PASS' else ('fail' if r['status'] == 'FAIL' else 'skip')
-            badge = f'<span class="badge {cls}">{r["status"]}</span>'
-            # show full detail (wrapped via CSS) but escape HTML
+            badge = f'<span class="badge {cls}">{_html.escape(r["status"])}</span>'
             detail_html = _html.escape(r['detail'])
-            cat_html = _html.escape(r['category'])
             test_html = _html.escape(r['test'])
-            html.append(f'<tr class="{cls}"><td>{i}</td><td>{cat_html}</td><td class="test">{test_html}</td><td>{badge}</td><td class="detail">{detail_html}</td></tr>')
+            html.append(f'<tr class="{cls}"><td>{i}</td><td class="test">{test_html}</td><td>{badge}</td><td class="detail">{detail_html}</td></tr>')
         html.append('</tbody></table>')
 
-        return {'ui_text': summary_text, 'ui_html': '\n'.join(html), 'rows': rows}
+        # Recommendations (simple heuristics)
+        recs = []
+        if fail_count > 0:
+            recs.append('There are failing checks — inspect failing test details and run the failing commands manually to reproduce and debug.')
+        if static_summary and 'Static C/C++ issues' in static_summary:
+            recs.append('Run `cppcheck`, `clang-tidy` and inspect `analysis_report_cpp.txt` to prioritize error-level issues.')
+        if USE_SANITIZERS:
+            recs.append('Sanitizers were used; investigate any ASAN/UBSAN reports printed to test outputs.')
+        if not recs:
+            recs.append('No immediate recommendations — all automated checks passed or were skipped.')
+
+        html.append('<h3>Recommendations</h3><ul>')
+        for r in recs:
+            html.append(f'<li>{_html.escape(r)}</li>')
+        html.append('</ul>')
+
+        ui_html = '\n'.join(html)
+
+        # Also build a compact text summary for quick viewing
+        compact_text_lines = [summary_text]
+        if static_summary:
+            compact_text_lines.append(static_summary)
+        compact_text_lines.append('Top results:')
+        for r in rows:
+            compact_text_lines.append(f"- {r['test']}: {r['status']}")
+
+        compact_text = '\n'.join(compact_text_lines)
+
+        # Return both HTML and compact textual summary
+        return {'ui_text': compact_text, 'ui_html': ui_html, 'rows': rows}
 
     try:
         structured['ui_summary'] = _make_ui_summary(structured)
@@ -1209,6 +1744,23 @@ def main():
             fbj.write_text(json.dumps(structured, indent=2), encoding="utf-8")
         except Exception:
             pass
+
+    # Also write a Markdown and HTML human-friendly report next to the cleaned report
+    try:
+        md_path = REPORT_FILE.with_suffix('.md')
+        ui_text = structured.get('ui_summary', {}).get('ui_text', '')
+        md_content = f"# Dynamic Analysis Report\n\n{ui_text}\n\nFor full details, see {REPORT_FILE.name} and the raw report."
+        md_path.write_text(md_content, encoding='utf-8')
+    except Exception:
+        pass
+    try:
+        html_path = REPORT_FILE.with_suffix('.html')
+        ui_html = structured.get('ui_summary', {}).get('ui_html', '')
+        if ui_html:
+            html_full = f"<html><head><meta charset=\"utf-8\"><title>Dynamic Analysis Report</title></head><body>{ui_html}</body></html>"
+            html_path.write_text(html_full, encoding='utf-8')
+    except Exception:
+        pass
 
     # Print the cleaned report to console so logs used by humans don't show the
     # 'Patches applied:' line in casual views.
