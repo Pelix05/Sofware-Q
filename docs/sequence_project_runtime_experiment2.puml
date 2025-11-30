@@ -1,0 +1,62 @@
+@startuml project_runtime_experiment2
+title Project runtime — Experiment 2 (upload → analysis → tests → report)
+
+actor Client as User
+participant FlaskApp as "Flask App / UI"
+participant WorkspaceFS as "Workspace (FS)"
+participant AnalyzerCPP as "Static Analyzer (C++)"
+participant HFTestGenerator as "HF Test Generator"
+participant LCPipeline as "Patch Pipeline / LLM"
+participant DynamicTester as "Dynamic Tester"
+participant Reasoning as "Reasoning Module"
+participant Reporter as "Report Store / UI"
+participant LLM as "LLM (external)"
+
+== Upload & Workspace Creation ==
+User -> FlaskApp: POST /upload (zip)
+FlaskApp -> WorkspaceFS: extract ZIP → create workspace id
+FlaskApp -> WorkspaceFS: write status.json (Queued)
+
+== Static Analysis ==
+FlaskApp -> AnalyzerCPP: run analyzer_cpp.py --repo-dir <workspace>
+AnalyzerCPP -> WorkspaceFS: write analysis_report_cpp.txt
+AnalyzerCPP -> WorkspaceFS: write snippets file (bug_snippets_cpp.txt)
+FlaskApp -> WorkspaceFS: update status.json (Static analysis done)
+
+== Test Generation ==
+FlaskApp -> HFTestGenerator: generate_tests(workspace_path)
+HFTestGenerator -> WorkspaceFS: write generated_tests.json
+FlaskApp -> WorkspaceFS: update status.json (Tests generated)
+
+== Patch / LLM Pipeline ==
+FlaskApp -> LCPipeline: run_pipeline() (reads report & snippets)
+LCPipeline -> WorkspaceFS: read analysis_report_cpp.txt, bug_snippets_cpp.txt
+LCPipeline -> LLM: ask_llm(prompt)
+LLM --> LCPipeline: patch diff (unified diff)
+LCPipeline -> WorkspaceFS: write all_patches.diff
+FlaskApp -> WorkspaceFS: update status.json (Patches ready)
+
+== Dynamic Testing ==
+FlaskApp -> DynamicTester: run_dynamic_cpp() (with env/paths)
+DynamicTester -> WorkspaceFS: try build (qmake/cmake) → binary
+DynamicTester -> WorkspaceFS: run tests, capture output
+DynamicTester -> WorkspaceFS: write dynamic_analysis_report.txt/json
+FlaskApp -> WorkspaceFS: update status.json (Dynamic tests done)
+
+== Reasoning & Suggestions ==
+Reasoning -> WorkspaceFS: read dynamic_analysis_report.txt
+Reasoning -> LLM: generate_fix_suggestion(failure_log)
+LLM --> Reasoning: suggested patch (diff or snippet)
+Reasoning -> WorkspaceFS: write suggestions / reasoning outputs
+
+== Finalize & UI ==
+FlaskApp -> Reporter: collect analysis & dynamic reports, env_debug.json, patches
+Reporter -> User: expose results via UI / download links
+
+note over WorkspaceFS, Reporter
+  Artifacts produced: analysis_report_*.txt, bug_snippets_cpp.txt,
+  generated_tests.json, dynamic_analysis_report(.json/.txt), all_patches.diff,
+  status.json, env_debug.json
+end note
+
+@enduml

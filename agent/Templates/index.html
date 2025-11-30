@@ -111,6 +111,17 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(
                             <div class="panel-body small" style="flex:1;overflow:auto">Runtime results will appear here.</div>
                         </div>
                     </div>
+                    <!-- White-box and Black-box summaries -->
+                    <div style="margin-top:12px;display:flex;gap:10px;align-items:stretch;">
+                        <div id="whiteBox" class="analysis-panel" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:160px;overflow:auto;display:flex;flex-direction:column;">
+                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">White-box</div>
+                            <div class="panel-body small" style="flex:1;overflow:auto">White-box summary will appear here.</div>
+                        </div>
+                        <div id="blackBox" class="analysis-panel" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:160px;overflow:auto;display:flex;flex-direction:column;">
+                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Black-box</div>
+                            <div class="panel-body small" style="flex:1;overflow:auto">Black-box summary will appear here.</div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -195,17 +206,93 @@ async function pollStatus(ws){
 
 function highlight(s){ if(!s) return ''; return String(s).replace(/PASS/g,'<span style="color:#7ef3b6;font-weight:800">PASS</span>').replace(/FAIL/g,'<span style="color:#ffb4b4;font-weight:800">FAIL</span>') }
 
+// Escape HTML to safely insert text nodes
+function escapeHtml(unsafe){
+    if(unsafe === null || unsafe === undefined) return '';
+    return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function renderResult(res){
     if(!res) return;
     wsInfo.textContent = res.workspace || 'workspace';
-    // populate static/dynamic panels into the dedicated panel-body elements
+    // populate static/dynamic panels using compact `ui_left` if available
     const statBody = staticContent.querySelector('.panel-body');
-    if(statBody){ statBody.innerHTML = highlight(res.static || res.static_analysis || 'No static output'); }
-    else { const d = document.createElement('div'); d.className = 'panel-body small'; d.innerHTML = highlight(res.static || res.static_analysis || 'No static output'); staticContent.appendChild(d); }
-
     const dynBody = dynamicContent.querySelector('.panel-body');
-    if(dynBody){ dynBody.innerHTML = highlight(res.dynamic || res.dynamic_analysis || 'No dynamic output'); }
-    else { const d2 = document.createElement('div'); d2.className = 'panel-body small'; d2.innerHTML = highlight(res.dynamic || res.dynamic_analysis || 'No dynamic output'); dynamicContent.appendChild(d2); }
+    const ui_left = res.ui_left || (res.dynamic_structured && res.dynamic_structured.ui_summary && res.dynamic_structured.ui_summary.ui_left) || null;
+    if(ui_left){
+        const shtml = [];
+        shtml.push('<div style="font-weight:700;margin-bottom:6px">' + escapeHtml(ui_left.static || 'Static: N/A') + '</div>');
+        if(ui_left.static_details && Array.isArray(ui_left.static_details) && ui_left.static_details.length){
+            shtml.push('<ul style="margin:6px 0 0 16px;padding:0;color:var(--muted);font-size:13px">');
+            ui_left.static_details.forEach(it => shtml.push('<li style="margin-bottom:6px">' + escapeHtml(it) + '</li>'));
+            shtml.push('</ul>');
+        } else {
+            shtml.push('<div style="color:var(--muted);font-size:13px">No prominent static issues detected.</div>');
+        }
+        if(statBody){ statBody.innerHTML = shtml.join('\n'); } else { const d = document.createElement('div'); d.className = 'panel-body small'; d.innerHTML = shtml.join('\n'); staticContent.appendChild(d); }
+
+        const dhtml = [];
+        dhtml.push('<div style="font-weight:700;margin-bottom:6px">' + escapeHtml(ui_left.dynamic || 'Dynamic: N/A') + '</div>');
+        if(ui_left.dynamic_failures && Array.isArray(ui_left.dynamic_failures) && ui_left.dynamic_failures.length){
+            dhtml.push('<div style="color:#ffb4b4;font-size:13px;margin-top:6px">Failing tests:</div>');
+            dhtml.push('<ul style="margin:6px 0 0 16px;padding:0">');
+            ui_left.dynamic_failures.forEach(it => dhtml.push('<li style="margin-bottom:6px;color:#ffb4b4">' + escapeHtml(it) + '</li>'));
+            dhtml.push('</ul>');
+        } else {
+            dhtml.push('<div style="color:var(--muted);font-size:13px">No failing runtime tests detected.</div>');
+        }
+        if(dynBody){ dynBody.innerHTML = dhtml.join('\n'); } else { const d2 = document.createElement('div'); d2.className = 'panel-body small'; d2.innerHTML = dhtml.join('\n'); dynamicContent.appendChild(d2); }
+    } else {
+        // fallback: raw outputs
+        if(statBody){ statBody.innerHTML = highlight(res.static || res.static_analysis || 'No static output'); }
+        else { const d = document.createElement('div'); d.className = 'panel-body small'; d.innerHTML = highlight(res.static || res.static_analysis || 'No static output'); staticContent.appendChild(d); }
+
+        if(dynBody){ dynBody.innerHTML = highlight(res.dynamic || res.dynamic_analysis || 'No dynamic output'); }
+        else { const d2 = document.createElement('div'); d2.className = 'panel-body small'; d2.innerHTML = highlight(res.dynamic || res.dynamic_analysis || 'No dynamic output'); dynamicContent.appendChild(d2); }
+    }
+    // Populate White-box and Black-box panels
+    try{
+        const whiteBox = document.getElementById('whiteBox');
+        const blackBox = document.getElementById('blackBox');
+        const wbBody = whiteBox && whiteBox.querySelector('.panel-body');
+        const bbBody = blackBox && blackBox.querySelector('.panel-body');
+        const white = res.white_box || {};
+        const black = res.black_box || {};
+        if(wbBody){
+            let html = '<div style="font-weight:700">' + escapeHtml(white.summary || 'White-box: N/A') + '</div>';
+            if(Array.isArray(white.details) && white.details.length){
+                html += '<ul style="margin:6px 0 0 16px;padding:0;color:var(--muted);font-size:13px">';
+                white.details.forEach(d=> html += '<li style="margin-bottom:6px">'+escapeHtml(d)+'</li>');
+                html += '</ul>';
+            }
+            if(white.usability && (white.usability.suggestions || white.usability.readme_exists!==undefined)){
+                html += '<div style="margin-top:8px;color:var(--muted);font-size:12px">';
+                if(white.usability.readme_exists!==undefined) html += 'README: ' + (white.usability.readme_exists ? 'present' : 'missing') + '<br/>';
+                if(white.usability.suggestions && white.usability.suggestions.length){
+                    html += 'Tips: ' + escapeHtml(white.usability.suggestions.join(' | '));
+                }
+                html += '</div>';
+            }
+            wbBody.innerHTML = html;
+        }
+        if(bbBody){
+            let html = '<div style="font-weight:700">' + escapeHtml(black.summary || 'Black-box: N/A') + '</div>';
+            if(Array.isArray(black.failures) && black.failures.length){
+                html += '<div style="color:#ffb4b4;margin-top:6px">Failing tests:</div><ul style="margin:6px 0 0 16px;padding:0">';
+                black.failures.forEach(f=> html += '<li style="margin-bottom:6px;color:#ffb4b4">'+escapeHtml(f)+'</li>');
+                html += '</ul>';
+            }
+            if(black.generated_tests_count!==undefined){
+                html += '<div style="margin-top:8px;color:var(--muted);font-size:12px">Generated tests: ' + (black.generated_tests_count||0) + '</div>';
+            }
+            bbBody.innerHTML = html;
+        }
+    }catch(e){ /* non-fatal */ }
     // Prefer structured UI table if provided by backend
     try{
         let ui = res.ui_html || (res.dynamic_structured && res.dynamic_structured.ui_summary && res.dynamic_structured.ui_summary.ui_html);

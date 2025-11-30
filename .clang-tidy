@@ -1,0 +1,7 @@
+Checks: '-*,clang-analyzer-*,bugprone-*,performance-*,modernize-*'
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*'
+AnalyzeTemporaryDtors: false
+FormatStyle: none
+
+# Minimal .clang-tidy to provide a baseline. Customize rules as needed.
