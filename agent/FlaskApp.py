@@ -28,6 +28,9 @@ logger = logging.getLogger(__name__)
 import uuid
 
 AGENT_DIR = Path(__file__).resolve().parent
+# Preferred temporary root (use D: by default; overridable via UPLOAD_TMP_ROOT)
+TMP_ROOT = Path(os.environ.get('UPLOAD_TMP_ROOT', r'D:\temp'))
+TMP_ROOT.mkdir(parents=True, exist_ok=True)
 
 # Load optional .env file in agent root to populate environment for the Flask process.
 # This allows configuring QT_INCLUDES, QT_LIBS, MSYS2_PATH, QT_BIN_PATH, etc. without
@@ -120,7 +123,11 @@ def handle_file_upload(file, file_type="py"):
     workspace_info: { workspace: <id>, language: 'cpp', target: <path str> }
     """
     try:
-        tmpdir_root = tempfile.mkdtemp()
+        try:
+            tmpdir_root = tempfile.mkdtemp(dir=str(TMP_ROOT))
+        except Exception:
+            # Fallback to default temp if D: is unavailable
+            tmpdir_root = tempfile.mkdtemp()
         file_path = os.path.join(tmpdir_root, file.filename)
         file.save(file_path)
 
