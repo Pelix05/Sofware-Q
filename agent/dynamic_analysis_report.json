@@ -1,0 +1,181 @@
+{
+  "timestamp": "2025-12-07T10:08:07.224116Z",
+  "repo": "agent\\workspaces\\utnubu__source_20251205_175825\\cpp_project",
+  "git_commit": null,
+  "mode": "cpp",
+  "environment": {
+    "os": "Windows-11-10.0.26100-SP0",
+    "python_version": "3.13.3 (tags/v3.13.3:6280bb5, Apr  8 2025, 14:47:33) [MSC v.1943 64 bit (AMD64)]",
+    "cpp_qt_behavior": "auto"
+  },
+  "duration_seconds": 0.132,
+  "tests": [
+    {
+      "test": "C++ compile/run",
+      "status": "FAIL",
+      "detail": "No C++ files found"
+    },
+    {
+      "test": "Resource Management",
+      "status": "PASS",
+      "detail": "Read success: Test"
+    },
+    {
+      "test": "Concurrency",
+      "status": "PASS",
+      "detail": "Task 0 done\nTask 1 done\nTask 2 done"
+    },
+    {
+      "test": "Boundary Test ",
+      "status": "PASS",
+      "detail": "Value  handled"
+    },
+    {
+      "test": "Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "status": "PASS",
+      "detail": "Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa handled"
+    },
+    {
+      "test": "Boundary Test -1",
+      "status": "PASS",
+      "detail": "Value -1 handled"
+    },
+    {
+      "test": "Boundary Test 0",
+      "status": "PASS",
+      "detail": "Value 0 handled"
+    },
+    {
+      "test": "Boundary Test 10000000000.0",
+      "status": "PASS",
+      "detail": "Value 10000000000.0 handled"
+    },
+    {
+      "test": "Boundary Test ('int', 'a')",
+      "status": "PASS",
+      "detail": "Caught expected exception: invalid literal for int() with base 10: 'a'"
+    },
+    {
+      "test": "Boundary Test ('float', 'b')",
+      "status": "PASS",
+      "detail": "Caught expected exception: could not convert string to float: 'b'"
+    },
+    {
+      "test": "Env Test",
+      "status": "PASS",
+      "detail": "TEST_MODE set to 1"
+    },
+    {
+      "test": "Dynamic Code Test",
+      "status": "PASS",
+      "detail": "JSON loaded: {'__import__': 'os'}"
+    },
+    {
+      "test": "Generated Tests",
+      "status": "SKIPPED",
+      "detail": "No generated_tests.json found in workspace or output dirs."
+    },
+    {
+      "test": "GUI smoke (AHK)",
+      "status": "FAIL",
+      "detail": "$ powershell -NoProfile -ExecutionPolicy Bypass -Command $ErrorActionPreference='SilentlyContinue'; $env:AHK_EXE_PATH='D:\\\\flowchart_test\\\\diagramscene.exe'; $env:AHK_LOG_PATH='D:\\\u65b0\u5efa\u6587\u4ef6\u5939\\School\\project\\\u8f6f\u4ef6\u6d4b\u8bd5\u5b9e\u9a8c\\Sofware-Q\\agent\\workspaces\\utnubu__source_20251205_175825\\ahk_result.txt'; New-Item -ItemType Directory -Force (Split-Path -LiteralPath $env:AHK_LOG_PATH) | Out-Null; New-Item -ItemType File -Force -Path $env:AHK_LOG_PATH | Out-Null; & 'C:\\\\Program Files\\\\AutoHotkey\\\\AutoHotkey.exe' 'D:\\\\flowchart_test\\\\diagramscene_autohotkey_smoke.ahk'; $log = Get-Content -LiteralPath $env:AHK_LOG_PATH; Write-Output $log; if ($log -like '*FAIL:*') { exit 1 } elseif ($log -like '*PASS: smoke completed*') { exit 0 } else { exit 1 }\n'Out-Null' \u4e0d\u662f\u5185\u90e8\u6216\u5916\u90e8\u547d\u4ee4\uff0c\u4e5f\u4e0d\u662f\u53ef\u8fd0\u884c\u7684\u7a0b\u5e8f\n\u6216\u6279\u5904\u7406\u6587\u4ef6\u3002\n"
+    }
+  ],
+  "pre_tests": [
+    {
+      "test": "C++ compile/run",
+      "status": "FAIL",
+      "detail": "No C++ files found"
+    }
+  ],
+  "ui_summary": {
+    "ui_text": "Summary: 11 PASS, 2 FAIL, 1 SKIPPED\nTop results:\n- C++ compile/run: FAIL\n- Resource Management: PASS\n- Concurrency: PASS\n- Boundary Test: PASS\n- Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: PASS\n- Boundary Test -1: PASS\n- Boundary Test 0: PASS\n- Boundary Test 10000000000.0: PASS\n- Boundary Test ('int', 'a'): PASS\n- Boundary Test ('float', 'b'): PASS\n- Env Test: PASS\n- Dynamic Code Test: PASS\n- Generated Tests: SKIPPED\n- GUI smoke (AHK): FAIL",
+    "ui_html": "<style>\n        body {font-family: Arial, Helvetica, sans-serif;}\n        .summary {margin-bottom: 1em}\n        .what {background:#f7f9fc;padding:10px;border-radius:6px;margin-bottom:1em}\n        table.test-report {border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; table-layout: fixed}\n        table.test-report th, table.test-report td {border: 1px solid #ddd; padding: 8px}\n        table.test-report th {background-color: #f4f6f8; text-align: left}\n        tr.pass {background-color: #e6ffed}\n        tr.fail {background-color: #ffecec}\n        tr.skip {background-color: #fff7e6}\n        td.detail {max-width: 60ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}\n        td.test {max-width: 40ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}\n        .badge {font-weight: bold; padding: 2px 6px; border-radius: 4px}\n        .badge.pass {color: #006400}\n        .badge.fail {color: #8b0000}\n        .badge.skip {color: #8a6d00}\n        </style>\n<h2>Dynamic Analysis Report</h2>\n<div class=\"summary\"><strong>Summary: 11 PASS, 2 FAIL, 1 SKIPPED</strong></div>\n<div class=\"what\"><h3>What we tested</h3><ul>\n<li><strong>C++ compile/run</strong>: Attempts compilation of C++ sources (fallback when build system not available).</li>\n<li><strong>Resource Management</strong>: Verifies that temporary resources (files, handles) are managed correctly.</li>\n<li><strong>Concurrency</strong>: Executes simple threaded tasks to detect obvious deadlocks or exceptions.</li>\n<li><strong>Boundary Test</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test -1</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test 0</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test 10000000000.0</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test (&#x27;int&#x27;, &#x27;a&#x27;)</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test (&#x27;float&#x27;, &#x27;b&#x27;)</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Env Test</strong>: Validates that required environment variables are set for runtime.</li>\n<li><strong>Dynamic Code Test</strong>: Runs a small dynamic code execution check to ensure sandboxing and error handling.</li>\n<li><strong>Generated Tests</strong>: LLM-generated integration tests for this workspace (commands supplied in generated_tests.json).</li>\n<li><strong>GUI smoke (AHK)</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n</ul></div>\n<table class=\"test-report\"><thead><tr><th style=\"width:4%\">#</th><th style=\"width:30%\">Test</th><th style=\"width:10%\">Status</th><th style=\"width:56%\">Details</th></tr></thead><tbody>\n<tr class=\"fail\"><td>1</td><td class=\"test\">C++ compile/run</td><td><span class=\"badge fail\">FAIL</span></td><td class=\"detail\">No C++ files found</td></tr>\n<tr class=\"pass\"><td>2</td><td class=\"test\">Resource Management</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Read success: Test</td></tr>\n<tr class=\"pass\"><td>3</td><td class=\"test\">Concurrency</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Task 0 done\nTask 1 done\nTask 2 done</td></tr>\n<tr class=\"pass\"><td>4</td><td class=\"test\">Boundary Test</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value  handled</td></tr>\n<tr class=\"pass\"><td>5</td><td class=\"test\">Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa handled</td></tr>\n<tr class=\"pass\"><td>6</td><td class=\"test\">Boundary Test -1</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value -1 handled</td></tr>\n<tr class=\"pass\"><td>7</td><td class=\"test\">Boundary Test 0</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value 0 handled</td></tr>\n<tr class=\"pass\"><td>8</td><td class=\"test\">Boundary Test 10000000000.0</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value 10000000000.0 handled</td></tr>\n<tr class=\"pass\"><td>9</td><td class=\"test\">Boundary Test (&#x27;int&#x27;, &#x27;a&#x27;)</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Caught expected exception: invalid literal for int() with base 10: &#x27;a&#x27;</td></tr>\n<tr class=\"pass\"><td>10</td><td class=\"test\">Boundary Test (&#x27;float&#x27;, &#x27;b&#x27;)</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Caught expected exception: could not convert string to float: &#x27;b&#x27;</td></tr>\n<tr class=\"pass\"><td>11</td><td class=\"test\">Env Test</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">TEST_MODE set to 1</td></tr>\n<tr class=\"pass\"><td>12</td><td class=\"test\">Dynamic Code Test</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">JSON loaded: {&#x27;__import__&#x27;: &#x27;os&#x27;}</td></tr>\n<tr class=\"skip\"><td>13</td><td class=\"test\">Generated Tests</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No generated_tests.json found in workspace or output dirs.</td></tr>\n<tr class=\"fail\"><td>14</td><td class=\"test\">GUI smoke (AHK)</td><td><span class=\"badge fail\">FAIL</span></td><td class=\"detail\">$ powershell -NoProfile -ExecutionPolicy Bypass -Command $ErrorActionPreference=&#x27;SilentlyContinue&#x27;; $env:AHK_EXE_PATH=&#x27;D:\\\\flowchart_test\\\\diagramscene.exe&#x27;; $env:AHK_LOG_PATH=&#x27;D:\\\u65b0\u5efa\u6587\u4ef6\u5939\\School\\project\\\u8f6f\u4ef6\u6d4b\u8bd5\u5b9e\u9a8c\\Sofware-Q\\agent\\workspaces\\utnubu__source_20251205_175825\\ahk_result.txt&#x27;; New-Item -ItemType Directory -Force (Split-Path -LiteralPath $env:AHK_LOG_PATH) | Out-Null; New-Item -ItemType File -Force -Path $env:AHK_LOG_PATH | Out-Null; &amp; &#x27;C:\\\\Program Files\\\\AutoHotkey\\\\AutoHotkey.exe&#x27; &#x27;D:\\\\flowchart_test\\\\diagramscene_autohotkey_smoke.ahk&#x27;; $log = Get-Content -LiteralPath $env:AHK_LOG_PATH; Write-Output $log; if ($log -like &#x27;*FAIL:*&#x27;) { exit 1 } elseif ($log -like &#x27;*PASS: smoke completed*&#x27;) { exit 0 } else { exit 1 }\n&#x27;Out-Null&#x27; \u4e0d\u662f\u5185\u90e8\u6216\u5916\u90e8\u547d\u4ee4\uff0c\u4e5f\u4e0d\u662f\u53ef\u8fd0\u884c\u7684\u7a0b\u5e8f\n\u6216\u6279\u5904\u7406\u6587\u4ef6\u3002</td></tr>\n</tbody></table>\n<h3>Recommendations</h3><ul>\n<li>There are failing checks \u2014 inspect failing test details and run the failing commands manually to reproduce and debug.</li>\n</ul>",
+    "rows": [
+      {
+        "test": "C++ compile/run",
+        "status": "FAIL",
+        "detail": "No C++ files found",
+        "description": "Attempts compilation of C++ sources (fallback when build system not available)."
+      },
+      {
+        "test": "Resource Management",
+        "status": "PASS",
+        "detail": "Read success: Test",
+        "description": "Verifies that temporary resources (files, handles) are managed correctly."
+      },
+      {
+        "test": "Concurrency",
+        "status": "PASS",
+        "detail": "Task 0 done\nTask 1 done\nTask 2 done",
+        "description": "Executes simple threaded tasks to detect obvious deadlocks or exceptions."
+      },
+      {
+        "test": "Boundary Test",
+        "status": "PASS",
+        "detail": "Value  handled",
+        "description": "Feeds extreme or malformed inputs to check boundary handling."
+      },
+      {
+        "test": "Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "status": "PASS",
+        "detail": "Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa handled",
+        "description": "Feeds extreme or malformed inputs to check boundary handling."
+      },
+      {
+        "test": "Boundary Test -1",
+        "status": "PASS",
+        "detail": "Value -1 handled",
+        "description": "Feeds extreme or malformed inputs to check boundary handling."
+      },
+      {
+        "test": "Boundary Test 0",
+        "status": "PASS",
+        "detail": "Value 0 handled",
+        "description": "Feeds extreme or malformed inputs to check boundary handling."
+      },
+      {
+        "test": "Boundary Test 10000000000.0",
+        "status": "PASS",
+        "detail": "Value 10000000000.0 handled",
+        "description": "Feeds extreme or malformed inputs to check boundary handling."
+      },
+      {
+        "test": "Boundary Test ('int', 'a')",
+        "status": "PASS",
+        "detail": "Caught expected exception: invalid literal for int() with base 10: 'a'",
+        "description": "Feeds extreme or malformed inputs to check boundary handling."
+      },
+      {
+        "test": "Boundary Test ('float', 'b')",
+        "status": "PASS",
+        "detail": "Caught expected exception: could not convert string to float: 'b'",
+        "description": "Feeds extreme or malformed inputs to check boundary handling."
+      },
+      {
+        "test": "Env Test",
+        "status": "PASS",
+        "detail": "TEST_MODE set to 1",
+        "description": "Validates that required environment variables are set for runtime."
+      },
+      {
+        "test": "Dynamic Code Test",
+        "status": "PASS",
+        "detail": "JSON loaded: {'__import__': 'os'}",
+        "description": "Runs a small dynamic code execution check to ensure sandboxing and error handling."
+      },
+      {
+        "test": "Generated Tests",
+        "status": "SKIPPED",
+        "detail": "No generated_tests.json found in workspace or output dirs.",
+        "description": "LLM-generated integration tests for this workspace (commands supplied in generated_tests.json)."
+      },
+      {
+        "test": "GUI smoke (AHK)",
+        "status": "FAIL",
+        "detail": "$ powershell -NoProfile -ExecutionPolicy Bypass -Command $ErrorActionPreference='SilentlyContinue'; $env:AHK_EXE_PATH='D:\\\\flowchart_test\\\\diagramscene.exe'; $env:AHK_LOG_PATH='D:\\\u65b0\u5efa\u6587\u4ef6\u5939\\School\\project\\\u8f6f\u4ef6\u6d4b\u8bd5\u5b9e\u9a8c\\Sofware-Q\\agent\\workspaces\\utnubu__source_20251205_175825\\ahk_result.txt'; New-Item -ItemType Directory -Force (Split-Path -LiteralPath $env:AHK_LOG_PATH) | Out-Null; New-Item -ItemType File -Force -Path $env:AHK_LOG_PATH | Out-Null; & 'C:\\\\Program Files\\\\AutoHotkey\\\\AutoHotkey.exe' 'D:\\\\flowchart_test\\\\diagramscene_autohotkey_smoke.ahk'; $log = Get-Content -LiteralPath $env:AHK_LOG_PATH; Write-Output $log; if ($log -like '*FAIL:*') { exit 1 } elseif ($log -like '*PASS: smoke completed*') { exit 0 } else { exit 1 }\n'Out-Null' \u4e0d\u662f\u5185\u90e8\u6216\u5916\u90e8\u547d\u4ee4\uff0c\u4e5f\u4e0d\u662f\u53ef\u8fd0\u884c\u7684\u7a0b\u5e8f\n\u6216\u6279\u5904\u7406\u6587\u4ef6\u3002",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      }
+    ]
+  }
+}

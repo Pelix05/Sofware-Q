@@ -1,0 +1,60 @@
+[
+  {
+    "name": "ahk_smoke",
+    "title": "AutoHotkey Smoke",
+    "description": "Run the AutoHotkey GUI smoke script; writes ahk_result.txt in workspace. Requires AutoHotkey v1 installed.",
+    "commands": [
+      "powershell -ExecutionPolicy Bypass -File \"..\\scripts\\run_ahk_smoke.ps1\" -Workspace \"..\""
+    ],
+    "expected": "GUI launches, draws shapes, copy/paste, undo/redo, zoom, save, exit; ahk_result.txt contains PASS or FAIL."
+  },
+  {
+    "name": "exe_exists",
+    "title": "检查可执行文件存在",
+    "description": "确认构建产物已生成（当前路径假设：cpp_project\\\\diagramscene_ultima\\\\release\\\\diagramscene.exe；如不同请调整）。",
+    "commands": [
+      "if exist \"cpp_project\\diagramscene_ultima\\release\\diagramscene.exe\" (echo exe_found) else (dir /s /b cpp_project\\*.exe & exit /b 1)"
+    ],
+    "expected": "输出 exe_found，或列出可用的 exe 路径供后续用例使用。"
+  },
+  {
+    "name": "run_executable_smoke",
+    "title": "启动并快速关闭应用（烟囱）",
+    "description": "启动 GUI 应用，等待 5 秒后强制关闭，验证能正常启动而不崩溃。若未找到 exe 则跳过。",
+    "commands": [
+      "if not exist \"cpp_project\\diagramscene_ultima\\release\\diagramscene.exe\" (echo skip_no_exe & exit /b 0)",
+      "start \"\" /b \"cpp_project\\diagramscene_ultima\\release\\diagramscene.exe\"",
+      "timeout /t 5 /nobreak",
+      "taskkill /im diagramscene.exe /f",
+      "echo smoke_done"
+    ],
+    "expected": "应用可启动，无崩溃弹窗；最终输出 smoke_done。"
+  },
+  {
+    "name": "readme_exists",
+    "title": "README 存在",
+    "description": "检查项目根目录下 README 是否存在且可读。",
+    "commands": [
+      "type README.md || type README.txt || echo no_readme"
+    ],
+    "expected": "README 可输出；若无则提示 no_readme。"
+  },
+  {
+    "name": "export_artifacts_presence",
+    "title": "导出产物目录探测（可选）",
+    "description": "若执行过导出，检查常见导出目录下是否有 PNG/JPG/SVG；不存在则提示。",
+    "commands": [
+      "if exist \"cpp_project\\exports\" (dir /b \"cpp_project\\exports\\*.png\" & dir /b \"cpp_project\\exports\\*.jpg\" & dir /b \"cpp_project\\exports\\*.svg\") else (echo no_exports_dir)"
+    ],
+    "expected": "列出已导出的文件；若未导出则提示 no_exports_dir 或无匹配文件。"
+  },
+  {
+    "name": "undo_redo_state_files",
+    "title": "工程保存文件存在性",
+    "description": "检查 fcproj 工程文件是否存在，用于后续手工/自动加载验证。",
+    "commands": [
+      "dir /b cpp_project\\*.fcproj || echo no_fcproj"
+    ],
+    "expected": "列出 fcproj 文件；若无则提示 no_fcproj。"
+  }
+]

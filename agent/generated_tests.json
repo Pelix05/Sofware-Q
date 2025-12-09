@@ -1,0 +1,266 @@
+[
+  {
+    "test": "TC-1.1: Rectangle Drawing",
+    "name": "TC-1.1: Rectangle Drawing",
+    "title": "Draw Rectangle",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Rectangle tool test - launch and verify"
+    ],
+    "expected": "Rectangle shape created successfully",
+    "description": "Verify that rectangles can be drawn and displayed correctly"
+  },
+  {
+    "test": "TC-1.2: Circle Drawing",
+    "name": "TC-1.2: Circle Drawing",
+    "title": "Draw Circle",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Circle tool test - launch and verify"
+    ],
+    "expected": "Circle shape created successfully",
+    "description": "Verify that circles can be drawn and displayed correctly"
+  },
+  {
+    "test": "TC-1.3: Diamond Drawing",
+    "name": "TC-1.3: Diamond Drawing",
+    "title": "Draw Diamond",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Diamond tool test - launch and verify"
+    ],
+    "expected": "Diamond shape created successfully",
+    "description": "Verify that diamonds can be drawn and displayed correctly"
+  },
+  {
+    "test": "TC-1.4: Arrow Drawing",
+    "name": "TC-1.4: Arrow Drawing",
+    "title": "Draw Arrow",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Arrow tool test - launch and verify"
+    ],
+    "expected": "Arrow shape created successfully",
+    "description": "Verify that arrows can be drawn with correct direction"
+  },
+  {
+    "test": "TC-2.1: Element Connection",
+    "name": "TC-2.1: Element Connection",
+    "title": "Connect Elements",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Connection test - draw and connect shapes"
+    ],
+    "expected": "Elements connected with line",
+    "description": "Verify that elements can be connected with lines"
+  },
+  {
+    "test": "TC-2.2: Auto Alignment",
+    "name": "TC-2.2: Auto Alignment",
+    "title": "Auto-align Elements",
+    "priority": "MEDIUM",
+    "status": "SKIPPED",
+    "commands": [
+      "# Auto-alignment test - align multiple elements"
+    ],
+    "expected": "Elements aligned to grid",
+    "description": "Verify that auto-alignment works for multiple elements"
+  },
+  {
+    "test": "TC-2.3: Smart Routing",
+    "name": "TC-2.3: Smart Routing",
+    "title": "Smart Connection Routing",
+    "priority": "MEDIUM",
+    "status": "SKIPPED",
+    "commands": [
+      "# Smart routing test - connections avoid obstacles"
+    ],
+    "expected": "Connections routed around obstacles",
+    "description": "Verify that connections automatically route around obstacles"
+  },
+  {
+    "test": "TC-3.1: Element Selection",
+    "name": "TC-3.1: Element Selection",
+    "title": "Select Elements",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Element selection test - single and multi selection"
+    ],
+    "expected": "Elements selected with visual feedback",
+    "description": "Verify that elements can be selected with visual feedback"
+  },
+  {
+    "test": "TC-3.2: Element Movement",
+    "name": "TC-3.2: Element Movement",
+    "title": "Move Elements",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Element movement test - drag to new position"
+    ],
+    "expected": "Elements moved to new position",
+    "description": "Verify that elements can be dragged smoothly and connections follow"
+  },
+  {
+    "test": "TC-3.3: Element Deletion",
+    "name": "TC-3.3: Element Deletion",
+    "title": "Delete Elements",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Element deletion test - delete via Delete key"
+    ],
+    "expected": "Elements and connections deleted",
+    "description": "Verify that elements and their connections are deleted"
+  },
+  {
+    "test": "TC-3.4: Copy/Paste",
+    "name": "TC-3.4: Copy/Paste",
+    "title": "Copy and Paste Elements",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Copy/paste test - duplicate elements"
+    ],
+    "expected": "Elements duplicated successfully",
+    "description": "Verify that elements can be duplicated with copy/paste"
+  },
+  {
+    "test": "TC-3.5: Undo/Redo",
+    "name": "TC-3.5: Undo/Redo",
+    "title": "Undo and Redo Operations",
+    "priority": "MEDIUM",
+    "status": "SKIPPED",
+    "commands": [
+      "# Undo/redo test - undo and redo operations"
+    ],
+    "expected": "Operations undone and redone",
+    "description": "Verify that operations can be undone and redone"
+  },
+  {
+    "test": "TC-4.1: Color Settings",
+    "name": "TC-4.1: Color Settings",
+    "title": "Change Element Colors",
+    "priority": "MEDIUM",
+    "status": "SKIPPED",
+    "commands": [
+      "# Color property test - change fill and border colors"
+    ],
+    "expected": "Element colors changed",
+    "description": "Verify that element colors can be changed via property panel"
+  },
+  {
+    "test": "TC-4.2: Size Adjustment",
+    "name": "TC-4.2: Size Adjustment",
+    "title": "Adjust Element Size",
+    "priority": "MEDIUM",
+    "status": "SKIPPED",
+    "commands": [
+      "# Size adjustment test - resize via handles or properties"
+    ],
+    "expected": "Element size adjusted",
+    "description": "Verify that element size can be adjusted via handles or properties"
+  },
+  {
+    "test": "TC-4.3: Label Editing",
+    "name": "TC-4.3: Label Editing",
+    "title": "Edit Element Labels",
+    "priority": "MEDIUM",
+    "status": "SKIPPED",
+    "commands": [
+      "# Label editing test - add and edit text"
+    ],
+    "expected": "Labels added and edited",
+    "description": "Verify that text labels can be added and edited"
+  },
+  {
+    "test": "TC-4.4: Shape Type Conversion",
+    "name": "TC-4.4: Shape Type Conversion",
+    "title": "Convert Shape Types",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Shape conversion test - convert to different type"
+    ],
+    "expected": "Shape type converted",
+    "description": "Verify that shapes can be converted while preserving properties"
+  },
+  {
+    "test": "TC-5.1: Load Template",
+    "name": "TC-5.1: Load Template",
+    "title": "Load Diagram Template",
+    "priority": "MEDIUM",
+    "status": "SKIPPED",
+    "commands": [
+      "# Template loading test - load predefined template"
+    ],
+    "expected": "Template loaded successfully",
+    "description": "Verify that predefined templates can be loaded"
+  },
+  {
+    "test": "TC-5.2: Save as Template",
+    "name": "TC-5.2: Save as Template",
+    "title": "Save Diagram as Template",
+    "priority": "LOW",
+    "status": "SKIPPED",
+    "commands": [
+      "# Template saving test - save as custom template"
+    ],
+    "expected": "Template saved successfully",
+    "description": "Verify that current diagram can be saved as template"
+  },
+  {
+    "test": "TC-6.1: Export PNG",
+    "name": "TC-6.1: Export PNG",
+    "title": "Export Diagram as PNG",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Export PNG test - export diagram as PNG image"
+    ],
+    "expected": "PNG file created",
+    "description": "Verify that diagrams can be exported as PNG images"
+  },
+  {
+    "test": "TC-6.2: Export PDF",
+    "name": "TC-6.2: Export PDF",
+    "title": "Export Diagram as PDF",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Export PDF test - export diagram as PDF document"
+    ],
+    "expected": "PDF file created",
+    "description": "Verify that diagrams can be exported as PDF documents"
+  },
+  {
+    "test": "TC-6.3: Export SVG",
+    "name": "TC-6.3: Export SVG",
+    "title": "Export Diagram as SVG",
+    "priority": "HIGH",
+    "status": "SKIPPED",
+    "commands": [
+      "# Export SVG test - export diagram as SVG vector"
+    ],
+    "expected": "SVG file created",
+    "description": "Verify that diagrams can be exported as SVG vectors"
+  },
+  {
+    "test": "TC-7.1: Import Visio",
+    "name": "TC-7.1: Import Visio",
+    "title": "Import Visio File",
+    "priority": "MEDIUM",
+    "status": "SKIPPED",
+    "commands": [
+      "# Import Visio test - import .vsdx file"
+    ],
+    "expected": "Visio file imported successfully",
+    "description": "Verify that Visio files can be imported"
+  }
+]

@@ -1,0 +1,36 @@
+# Dynamic Analysis Report
+Date: 2025-12-07
+
+== TEST EXECUTION ==
+[-] C++ compile/run ... FAIL
+ No C++ files found
+[+] Resource Management ... PASS
+ Read success: Test
+[+] Concurrency ... PASS
+ Task 0 done
+ Task 1 done
+ Task 2 done
+[+] Boundary Test  ... PASS
+ Value  handled
+[+] Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ... PASS
+ Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa handled
+[+] Boundary Test -1 ... PASS
+ Value -1 handled
+[+] Boundary Test 0 ... PASS
+ Value 0 handled
+[+] Boundary Test 10000000000.0 ... PASS
+ Value 10000000000.0 handled
+[+] Boundary Test ('int', 'a') ... PASS
+ Caught expected exception: invalid literal for int() with base 10: 'a'
+[+] Boundary Test ('float', 'b') ... PASS
+ Caught expected exception: could not convert string to float: 'b'
+[+] Env Test ... PASS
+ TEST_MODE set to 1
+[+] Dynamic Code Test ... PASS
+ JSON loaded: {'__import__': 'os'}
+[!] Generated Tests ... SKIPPED
+ No generated_tests.json found in workspace or output dirs.
+[-] GUI smoke (AHK) ... FAIL
+ $ powershell -NoProfile -ExecutionPolicy Bypass -Command $ErrorActionPreference='SilentlyContinue'; $env:AHK_EXE_PATH='D:\\flowchart_test\\diagramscene.exe'; $env:AHK_LOG_PATH='D:\新建文件夹\School\project\软件测试实验\Sofware-Q\agent\workspaces\utnubu__source_20251205_175825\ahk_result.txt'; New-Item -ItemType Directory -Force (Split-Path -LiteralPath $env:AHK_LOG_PATH) | Out-Null; New-Item -ItemType File -Force -Path $env:AHK_LOG_PATH | Out-Null; & 'C:\\Program Files\\AutoHotkey\\AutoHotkey.exe' 'D:\\flowchart_test\\diagramscene_autohotkey_smoke.ahk'; $log = Get-Content -LiteralPath $env:AHK_LOG_PATH; Write-Output $log; if ($log -like '*FAIL:*') { exit 1 } elseif ($log -like '*PASS: smoke completed*') { exit 0 } else { exit 1 }
+ 'Out-Null' 不是内部或外部命令，也不是可运行的程序
+ 或批处理文件。

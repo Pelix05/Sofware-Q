@@ -362,14 +362,29 @@ def upload_file_route():
                 path_parts.append(msys2_path)
             if qt_bin and Path(qt_bin).exists():
                 path_parts.append(qt_bin)
-            # Common defaults (safe-guard: only add if they exist)
+            # Common defaults (only add if they exist). Prefer detected Qt 6.10.1 if present.
             if not path_parts:
                 default_msys = Path(r'C:\msys64\mingw64\bin')
-                default_qtbin = Path(r'C:\Qt\6.9.2\mingw_64\bin')
+                default_qtbin = None
+                for candidate in (
+                    Path(r'C:\Qt\6.10.1\mingw_64\bin'),
+                    Path(r'C:\Qt\6.9.2\mingw_64\bin'),
+                ):
+                    if candidate.exists():
+                        default_qtbin = candidate
+                        break
                 if default_msys.exists():
                     path_parts.append(str(default_msys))
-                if default_qtbin.exists():
+                if default_qtbin and default_qtbin.exists():
                     path_parts.append(str(default_qtbin))
+                    # If QT_INCLUDES/LIBS not set, infer from detected Qt root
+                    qt_root = default_qtbin.parent
+                    qt_includes = qt_includes or str(qt_root / 'include')
+                    qt_libs = qt_libs or str(qt_root / 'lib')
+                    # Surface inferred Qt paths into environment so tester sees them
+                    os.environ.setdefault('QT_BIN_PATH', str(default_qtbin))
+                    os.environ.setdefault('QT_INCLUDES', qt_includes)
+                    os.environ.setdefault('QT_LIBS', qt_libs)
 
             if path_parts:
                 # Prepend to PATH for the background thread so subprocesses see qmake/g++
@@ -408,6 +423,12 @@ def upload_file_route():
                 env['MSYS2_PATH'] = msys2_path
             if qt_bin:
                 env['QT_BIN_PATH'] = qt_bin
+            # If QT_BIN_PATH not set but path_parts contains a Qt bin, surface it
+            if 'QT_BIN_PATH' not in env:
+                for ppart in path_parts:
+                    if 'Qt' in str(ppart) and 'bin' in str(ppart):
+                        env['QT_BIN_PATH'] = str(ppart)
+                        break
 
             # Prepend PATH parts so tools like qmake/mingw32-make/moc are found
             if path_parts:
@@ -423,6 +444,24 @@ def upload_file_route():
                 logger.warning('HF test generator failed for %s: %s', ws_id, _e)
                 write_status(ws_path, status='Processing', progress=40, message='Test generation skipped')
 
+            # Generate DiagramScene functional tests (if applicable)
+            try:
+                from diagramscene_functional_tests import generate_diagramscene_tests
+                write_status(ws_path, status='Processing', progress=42, message='Generating DiagramScene tests')
+                diag_tests = generate_diagramscene_tests(exe_path=None, out_dir=Path(ws_path))
+                if diag_tests:
+                    # Save to generated_tests_diagramscene.json
+                    import json
+                    diag_json_path = Path(ws_path) / "generated_tests_diagramscene.json"
+                    diag_json_path.write_text(json.dumps(diag_tests, indent=2), encoding='utf-8')
+                    logger.info('Generated %d DiagramScene functional tests for %s', len(diag_tests), ws_id)
+                write_status(ws_path, status='Processing', progress=45, message='DiagramScene tests ready')
+            except ImportError:
+                logger.debug('DiagramScene test generator not available')
+            except Exception as _e:
+                logger.warning('DiagramScene test generator failed for %s: %s', ws_id, _e)
+                write_status(ws_path, status='Processing', progress=45, message='DiagramScene tests skipped')
+
             # Build argument list mirroring manual invocation
             args = [
                 'py', '-3', '-u', 'dynamic_tester.py',
@@ -434,6 +473,11 @@ def upload_file_route():
                 args += ['--qt-includes', qt_includes]
             if qt_libs:
                 args += ['--qt-libs', qt_libs]
+            # If we inferred Qt from defaults, ensure env also sees these
+            if qt_includes and 'QT_INCLUDES' not in env:
+                env['QT_INCLUDES'] = qt_includes
+            if qt_libs and 'QT_LIBS' not in env:
+                env['QT_LIBS'] = qt_libs
 
             try:
                 proc = subprocess.run(args, cwd=str(AGENT_DIR), env=env, capture_output=True, text=True)
@@ -795,9 +839,6 @@ def interpret_command(user_input: str):
 @app.route('/')
 def index():
     return render_template('index.html')
-
-
-
 
 
 @app.route('/process', methods=['POST'])

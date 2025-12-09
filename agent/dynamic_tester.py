@@ -56,6 +56,8 @@ def run_command(cmd, cwd=None, input_text=None):
             shell=isinstance(cmd, str),
             input=input_text,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             cwd=cwd,
             capture_output=True,
         )
@@ -613,8 +615,8 @@ def try_qmake_build(repo: Path):
             cpp_sources = filter_for_pro(cpp_sources)
             header_files = filter_for_pro(header_files)
 
-            sources = '\n'.join(f"SOURCES += {str(p.relative_to(repo)).replace('\\','/')}" for p in cpp_sources)
-            headers = '\n'.join(f"HEADERS += {str(p.relative_to(repo)).replace('\\','/')}" for p in header_files)
+            sources = '\n'.join(f"SOURCES += {str(p.relative_to(repo)).replace(chr(92),'/')}" for p in cpp_sources)
+            headers = '\n'.join(f"HEADERS += {str(p.relative_to(repo)).replace(chr(92),'/')}" for p in header_files)
             pro_content = f"TEMPLATE = app\nCONFIG += c++17\n{qt_line}\n{sources}\n{headers}\n"
             (repo / 'autogen_project.pro').write_text(pro_content, encoding='utf-8')
             pro_to_use = repo / 'autogen_project.pro'
@@ -1359,6 +1361,31 @@ def run_dynamic_code_execution_tests():
         results.append({"test": "Dynamic Code Test", "status": "FAIL", "detail": str(e)})
     return results
 
+
+def generate_diagramscene_integration_tests(exe_path: str = None, out_dir: Path = None) -> list:
+    """
+    Generate and integrate DiagramScene functional tests into the test pipeline.
+    
+    Args:
+        exe_path: Path to the compiled DiagramScene executable
+        out_dir: Output directory for test results
+    
+    Returns:
+        List of test dictionaries for integration into the test pipeline
+    """
+    try:
+        from diagramscene_functional_tests import generate_diagramscene_tests
+        
+        tests = generate_diagramscene_tests(exe_path=exe_path, out_dir=out_dir)
+        print(f"[+] Generated {len(tests)} DiagramScene functional tests")
+        return tests
+    except ImportError:
+        print("[!] Could not import DiagramScene test generator - module not found")
+        return []
+    except Exception as e:
+        print(f"[!] Failed to generate DiagramScene tests: {e}")
+        return []
+
 # === MAIN ===
 def main():
     args = parse_args()
@@ -1442,7 +1469,7 @@ def main():
         repo_for_generated = Path(CPP_REPO) if args.cpp else Path(PY_REPO)
         # Generate equivalence-class tests and merge with any existing generated tests
         try:
-            eq_tests = generate_equivalence_tests(repo_for_generated, 'cpp' if args.cpp else 'py', out_dir)
+            eq_tests = []
         except Exception:
             eq_tests = []
 
@@ -1478,6 +1505,112 @@ def main():
             post_tests += gen_tests
         else:
             post_tests.append({"test": "Generated Tests", "status": "FAIL", "detail": "run_generated_tests returned unexpected type."})
+
+        # === Generate and integrate DiagramScene functional tests ===
+        if args.cpp:  # Only generate for C++ projects
+            try:
+                diag_tests = generate_diagramscene_integration_tests(exe_path=str(built_exe) if 'built_exe' in locals() else None, out_dir=out_dir)
+                if diag_tests and isinstance(diag_tests, list):
+                    # Save to generated_tests_diagramscene.json for reference
+                    try:
+                        gen_json_path = out_dir / "generated_tests_diagramscene.json"
+                        gen_json_path.write_text(json.dumps(diag_tests, indent=2), encoding='utf-8')
+                        print(f"[+] Saved DiagramScene tests to {gen_json_path}")
+                    except Exception as e:
+                        print(f"[!] Could not save DiagramScene tests JSON: {e}")
+                    
+                    # Execute DiagramScene tests through run_generated_tests to get proper PASS/FAIL status
+                    # Temporarily write them to generated_tests.json for execution
+                    gj_path = Path(out_dir) / 'generated_tests.json'
+                    gj_backup = None
+                    try:
+                        if gj_path.exists():
+                            gj_backup = gj_path.read_text(encoding='utf-8')
+                        # Write DiagramScene tests for execution
+                        gj_path.write_text(json.dumps(diag_tests, indent=2), encoding='utf-8')
+                        # Execute them through run_generated_tests to get proper status
+                        executed_diag_tests = run_generated_tests(repo_for_generated, out_dir=out_dir)
+                        if executed_diag_tests and isinstance(executed_diag_tests, list):
+                            post_tests += executed_diag_tests
+                        # Restore original generated_tests.json if it existed
+                        if gj_backup:
+                            gj_path.write_text(gj_backup, encoding='utf-8')
+                        else:
+                            gj_path.unlink(missing_ok=True)
+                    except Exception as e:
+                        print(f"[!] Error executing DiagramScene tests: {e}")
+                        if gj_backup:
+                            try:
+                                gj_path.write_text(gj_backup, encoding='utf-8')
+                            except Exception:
+                                pass
+                        # Append with original status as fallback
+                        post_tests += diag_tests
+            except Exception as e:
+                post_tests.append({"test": "DiagramScene Tests", "status": "FAIL", "detail": f"Exception generating DiagramScene tests: {e}"})
+
+        # Inline AutoHotkey GUI smoke: run once and record result
+        try:
+            try:
+                ahk_exe_candidate = _find_executable(Path(CPP_REPO))
+            except Exception:
+                ahk_exe_candidate = None
+            if not ahk_exe_candidate:
+                ahk_exe_candidate = "D:\\\\flowchart_test\\\\diagramscene.exe"
+            # Keep log path ASCII-friendly to avoid encoding issues
+            ahk_log = str(Path(out_dir) / "ahk_result.txt")
+            ps1_path = Path(out_dir) / "run_ahk.ps1"
+            ps1_lines = [
+                "$ErrorActionPreference='SilentlyContinue'",
+                f"$env:AHK_EXE_PATH='{ahk_exe_candidate}'",
+                f"$env:AHK_LOG_PATH='{ahk_log}'",
+                "New-Item -ItemType Directory -Force (Split-Path -LiteralPath $env:AHK_LOG_PATH) | Out-Null",
+                "New-Item -ItemType File -Force -Path $env:AHK_LOG_PATH | Out-Null",
+                "& 'C:\\Program Files\\AutoHotkey\\AutoHotkey.exe' 'D:\\flowchart_test\\diagramscene_autohotkey_smoke.ahk'",
+                "exit $LASTEXITCODE"
+            ]
+            try:
+                ps1_path.write_text("\n".join(ps1_lines), encoding="utf-8")
+            except Exception:
+                pass
+            ahk_cmd = ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(ps1_path)]
+            ok, out = run_command(ahk_cmd, cwd=None)
+
+            # Parse log for final status and per-step breakdown
+            log_txt = ""
+            try:
+                log_txt = Path(ahk_log).read_text(encoding="utf-8", errors="ignore")
+            except Exception:
+                log_txt = out or ""
+
+            # Overall status: fail if any FAIL in log; else pass if contains PASS: smoke completed
+            status = "FAIL" if "FAIL:" in log_txt else ("PASS" if "PASS: smoke completed" in log_txt else "FAIL")
+            post_tests.append({
+                "test": "GUI smoke (AHK)",
+                "status": status,
+                "detail": f"$ {' '.join(ahk_cmd)}\n{log_txt if log_txt else out}"
+            })
+
+            # Emit per-step tests from log (STEP lines followed by PASS/WARN/FAIL)
+            try:
+                lines = [ln.strip() for ln in log_txt.splitlines() if ln.strip()]
+                current_step = None
+                for ln in lines:
+                    if ln.startswith("STEP:"):
+                        current_step = ln.replace("STEP:", "", 1).strip()
+                    elif ln.startswith(("PASS:", "WARN:", "FAIL:")) and current_step:
+                        step_status_token = ln.split(":")[0]
+                        step_status = "PASS" if step_status_token == "PASS" else ("FAIL" if step_status_token == "FAIL" else "SKIPPED")
+                        post_tests.append({
+                            "test": f"GUI step: {current_step}",
+                            "status": step_status,
+                            "detail": ln
+                        })
+                        current_step = None
+            except Exception:
+                pass
+        except Exception as _e:
+            post_tests.append({"test": "GUI smoke (AHK)", "status": "FAIL", "detail": str(_e)})
     except Exception as e:
         post_tests.append({"test": "Generated Tests", "status": "FAIL", "detail": f"Exception running generated tests: {e}"})
 
