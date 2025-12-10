@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-12-10T19:45:22.404222",
+  "script": "D:\\新建文件夹\\School\\project\\软件测试实验\\Sofware-Q\\agent\\diagramscene_tests_v2.ahk",
+  "results": [
+    {
+      "test": "AutoHotkey Tests",
+      "status": "FAIL",
+      "detail": "No results parsed"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0,
+    "total": 0
+  }
+}

@@ -1,0 +1,66 @@
+App launching...
+App launched, waiting for window...
+
+>>> DRAWING TESTS
+TC-1.1: Rectangle
+  ? PASS
+TC-1.2: Circle
+  ? PASS
+TC-1.3: Diamond
+  ? PASS
+TC-1.4: Arrow
+  ? PASS
+
+>>> CONNECTION TESTS
+TC-2.1: Connection
+  ? PASS
+TC-2.2: Alignment
+  ? PASS
+TC-2.3: Routing
+  ? PASS
+
+>>> EDITING TESTS
+TC-3.1: Selection
+  ? PASS
+TC-3.2: Movement
+  ? PASS
+TC-3.3: Deletion
+  ? PASS
+TC-3.4: Copy/Paste
+  ? PASS
+TC-3.5: Undo/Redo
+  ? PASS
+
+>>> PROPERTY TESTS
+TC-4.1: Color
+  ? PASS
+TC-4.2: Size
+  ? PASS
+TC-4.3: Label
+  ? PASS
+TC-4.4: Shape Conversion
+  ? PASS
+
+>>> TEMPLATE TESTS
+TC-5.1: Load Template
+  ? PASS
+TC-5.2: Save Template
+  ? PASS
+
+>>> EXPORT TESTS
+TC-6.1: PNG Export
+  ? PASS
+TC-6.2: PDF Export
+  ? PASS
+TC-6.3: SVG Export
+  ? PASS
+
+>>> IMPORT TESTS
+TC-7.1: Visio Import
+  ? PASS
+
+=== TEST SUMMARY ===
+Passed: 22
+Failed: 0
+Total:  22
+Completed: 20251210194521
