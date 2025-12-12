@@ -1,0 +1,28 @@
+Start testing: Dec 13 00:18 China Standard Time
+----------------------------------------------------------
+5/5 Testing: gtest_concurrency
+5/5 Test: gtest_concurrency
+Command: "D:/semester5/quality/ai-agent-project/agent/cpp_tests/build/Release/test_concurrency_gtest.exe"
+Directory: D:/semester5/quality/ai-agent-project/agent/cpp_tests/build
+"gtest_concurrency" start time: Dec 13 00:18 China Standard Time
+Output:
+----------------------------------------------------------
+[==========] Running 1 test from 1 test suite.
+[----------] Global test environment set-up.
+[----------] 1 test from Concurrency
+[ RUN      ] Concurrency.AllTasksComplete
+[       OK ] Concurrency.AllTasksComplete (180 ms)
+[----------] 1 test from Concurrency (180 ms total)
+
+[----------] Global test environment tear-down
+[==========] 1 test from 1 test suite ran. (180 ms total)
+[  PASSED  ] 1 test.
+<end of output>
+Test time =   0.19 sec
+----------------------------------------------------------
+Test Passed.
+"gtest_concurrency" end time: Dec 13 00:18 China Standard Time
+"gtest_concurrency" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Dec 13 00:18 China Standard Time

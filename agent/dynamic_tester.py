@@ -199,6 +199,24 @@ def _translate_command_for_windows(cmd: str, exec_cwd: str = None):
         ps = f"if (Select-String -Pattern '{pat}' -Path '{path}' -SimpleMatch -Quiet) {{ Select-String -Pattern '{pat}' -Path '{path}'; exit 0 }} else {{ exit 1 }}"
         return f"powershell -NoProfile -Command \"{ps}\""
 
+    # Translate simple test -f and compound patterns to PowerShell Test-Path/Get-Content
+    # e.g. `test -f file` -> Test-Path
+    m_test = re.match(r"^test\s+-f\s+(\S+)$", s)
+    if m_test:
+        path = m_test.group(1).strip()
+        ps = f"if (Test-Path -LiteralPath '{path}') {{ exit 0 }} else {{ exit 1 }}"
+        return f"powershell -NoProfile -Command \"{ps}\""
+
+    # Compound: test -f FILE && test -n $(cat FILE) -> check exists and non-empty
+    m_comp = re.match(r"^test\s+-f\s+(\S+)\s+&&\s+test\s+-n\s+\$\(cat\s+(\S+)\)", s)
+    if m_comp:
+        p1 = m_comp.group(1).strip()
+        p2 = m_comp.group(2).strip()
+        if p1 == p2:
+            ps = (f"if ((Test-Path -LiteralPath '{p1}') -and ((Get-Content -Raw -LiteralPath '{p1}') -ne '' )) "
+                  "{ exit 0 } else { exit 1 }")
+            return f"powershell -NoProfile -Command \"{ps}\""
+
     # Replace `./release/app.exe` style in the middle of command and run via PowerShell if it's an .exe invocation
     if './' in s and s.strip().endswith('.exe'):
         s2 = s.replace('./', '.\\')
@@ -265,6 +283,67 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
     if not isinstance(jt, list):
         return [{"test": "Generated Tests", "status": "FAIL", "detail": "generated_tests.json is not a JSON array."}]
 
+    # --- Coalesce build commands: detect build-like commands and run them once up-front.
+    build_cmds = []
+    def is_build_cmd(c: str):
+        try:
+            s = str(c)
+        except Exception:
+            return False
+        s_low = s.lower()
+        # heuristics: qmake, make, mingw32-make, cmake --build, ninja, msbuild
+        if 'qmake' in s_low:
+            return True
+        if 'mingw32-make' in s_low or re.search(r'\bmake\b', s_low) and 'cmake --build' not in s_low:
+            return True
+        if 'cmake --build' in s_low or (s_low.strip().startswith('cmake') and '--build' in s_low):
+            return True
+        if 'ninja' in s_low:
+            return True
+        if 'msbuild' in s_low:
+            return True
+        # Common qmake-style combined commands 'qmake && mingw32-make'
+        if '&&' in s_low and ('qmake' in s_low or 'make' in s_low or 'mingw32-make' in s_low):
+            return True
+        return False
+
+    # collect unique build commands preserving order
+    for t in jt:
+        cmds_t = t.get('commands') or t.get('command') or []
+        if isinstance(cmds_t, str):
+            cmds_t = [cmds_t]
+        for c in cmds_t:
+            try:
+                cs = str(c).strip()
+            except Exception:
+                continue
+            if not cs:
+                continue
+            if is_build_cmd(cs) and cs not in build_cmds:
+                build_cmds.append(cs)
+
+    # run each unique build command once (if any)
+    build_results = {}
+    prebuild_outputs = []
+    if build_cmds:
+        for bc in build_cmds:
+            run_bc = bc
+            try:
+                if os.name == 'nt':
+                    run_bc = _translate_command_for_windows(bc, exec_cwd)
+            except Exception:
+                run_bc = bc
+            ok, out = run_command(run_bc, cwd=exec_cwd)
+            build_results[bc] = (ok, out)
+            prebuild_outputs.append(f"$ {bc}\n{out}")
+
+    # If we executed builds, include that output at the top of the first test detail
+    if prebuild_outputs:
+        prebuild_summary = "\n---\n".join(prebuild_outputs)
+    else:
+        prebuild_summary = ''
+
+    # Now iterate tests (skipping or removing build steps we've already executed)
     for t in jt:
         name = t.get('name') or t.get('title') or t.get('test') or 'Generated Test'
         cmds = t.get('commands') or t.get('command') or []
@@ -286,6 +365,9 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
             continue
 
         combined_output = []
+        # If we ran pre-builds, include their output at the top of this test's detail
+        if prebuild_summary:
+            combined_output.append(prebuild_summary)
         overall_ok = True
         # Choose execution cwd: prefer the folder that contains build/project files
         # (e.g. a .pro file for qmake or a CMakeLists.txt). If a built executable
@@ -321,7 +403,31 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
                 exec_cwd = None
         except Exception:
             exec_cwd = str(repo) if repo else None
-        for cmd in cmds:
+        # Remove build commands that we already ran up-front
+        filtered_cmds = []
+        removed_builds = []
+        for c in cmds:
+            try:
+                cs = str(c).strip()
+            except Exception:
+                cs = ''
+            if cs and is_build_cmd(cs) and cs in build_results:
+                removed_builds.append(cs)
+            else:
+                filtered_cmds.append(c)
+
+        # If this test only contained build commands we already executed, record a SKIPPED/FAIL accordingly
+        if not filtered_cmds:
+            if removed_builds:
+                # if any of the build runs failed, mark this test as FAIL
+                any_fail = any(not build_results.get(bc, (True, ''))[0] for bc in removed_builds)
+                detail = prebuild_summary or ('Build steps executed earlier: ' + ','.join(removed_builds))
+                status = 'FAIL' if any_fail else 'SKIPPED'
+                results.append({"test": name, "status": status, "detail": detail})
+                continue
+            # otherwise fallthrough
+
+        for cmd in filtered_cmds:
             # Skip commands that are comments (start with '#') or empty
             try:
                 cmd_text = str(cmd)
@@ -723,21 +829,87 @@ def run_cpp_unit_tests(search_dirs):
     """
     results = []
     try:
+        # First, attempt to build common build systems (CMake/qmake) so unit tests
+        # that are part of the build are produced reliably. For each candidate
+        # search dir, if a CMakeLists.txt or .pro exists, attempt to configure+build.
+        built_any = False
+        for d in search_dirs:
+            try:
+                bd = Path(d)
+                if not bd.exists():
+                    continue
+                # If a CMakeLists.txt is present, run a configure+build pass
+                if (bd / 'CMakeLists.txt').exists():
+                    try:
+                        ok, out = try_cmake_build(bd)
+                        results.append({'test': f'cmake_build:{bd}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                        if ok:
+                            built_any = True
+                    except Exception as e:
+                        results.append({'test': f'cmake_build:{bd}', 'status': 'FAIL', 'detail': str(e)})
+                # If qmake project present, attempt qmake build which may produce tests
+                elif any((bd / p).exists() for p in bd.glob('*.pro')):
+                    try:
+                        ok, out = try_qmake_build(bd)
+                        results.append({'test': f'qmake_build:{bd}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                        if ok:
+                            built_any = True
+                    except Exception as e:
+                        results.append({'test': f'qmake_build:{bd}', 'status': 'FAIL', 'detail': str(e)})
+            except Exception:
+                continue
+
         # Prefer running ctest if available and useful
         ctest_path = shutil.which('ctest') or shutil.which('ctest.exe')
         if ctest_path:
-            # Try to find a build dir that contains CTestTestfile.cmake
+            # Try to find a build dir that contains CTestTestfile.cmake or Testing/ folder
             for d in search_dirs:
                 try:
                     bd = Path(d)
                     if not bd.exists():
                         continue
+                    # if this dir is a source dir, prefer its build subdir
+                    candidate_build = bd
                     if (bd / 'CTestTestfile.cmake').exists() or (bd / 'Testing').exists():
-                        ok, out = run_command('ctest --output-on-failure', cwd=str(bd))
-                        results.append({'test': 'ctest', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                        candidate_build = bd
+                    elif (bd / 'build' / 'CTestTestfile.cmake').exists() or (bd / 'build' / 'Testing').exists():
+                        candidate_build = bd / 'build'
+                    # If we built using try_cmake_build above, prefer bd/build
+                    if (candidate_build / 'CTestTestfile.cmake').exists() or (candidate_build / 'Testing').exists():
+                        # Ensure we build ALL_BUILD target first to produce tests when generators like VS/MSBuild are used
+                        try:
+                            build_cmd = f'cmake --build "{str(candidate_build)}" --target ALL_BUILD -- -j 1'
+                            # perform a best-effort build of ALL_BUILD (may be no-op)
+                            run_command(build_cmd, cwd=str(candidate_build))
+                        except Exception:
+                            pass
+                        ok, out = run_command('ctest --output-on-failure', cwd=str(candidate_build))
+                        results.append({'test': f'ctest:{candidate_build}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                        # After running ctest, return collected results (unit tests produced)
                         return results
                 except Exception:
                     continue
+
+        # If we didn't find or run any ctest tests, try to inject a GoogleTest
+        # scaffold so the workspace gets white-box unit tests executed.
+        try:
+            injected = ensure_injected_googletest(Path(search_dirs[0]) if search_dirs else Path.cwd(), out_dir=None)
+            if injected:
+                # attempt to configure+build the injected tests and run ctest in that dir
+                try:
+                    okc, outc = try_cmake_build(injected)
+                    results.append({'test': f'injected_cmake_build:{injected}', 'status': 'PASS' if okc else 'FAIL', 'detail': outc})
+                    if okc:
+                        # run ctest in injected build
+                        inj_build = injected / 'build'
+                        if inj_build.exists():
+                            ok, out = run_command('ctest --output-on-failure', cwd=str(inj_build))
+                            results.append({'test': f'injected_ctest:{inj_build}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                            return results
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
         # Fallback: find test executables
         seen = set()
@@ -776,6 +948,74 @@ def run_cpp_unit_tests(search_dirs):
         return results
     except Exception as e:
         return [{'test': 'cpp_unit_discovery', 'status': 'FAIL', 'detail': str(e)}]
+
+
+def ensure_injected_googletest(repo: Path, out_dir: Path = None) -> Path:
+    """Ensure a GoogleTest scaffold is available inside the workspace.
+
+    If the workspace does not contain unit tests, this function copies the
+    agent's `cpp_tests` scaffold into `repo/injected_whitebox_tests` (or into
+    `out_dir` if provided) and returns the path to that scaffold. The copy is
+    non-destructive to the original workspace sources and is marked "injected"
+    in test reports.
+    """
+    try:
+        agent_dir = Path(__file__).resolve().parent
+        scaffold_src = agent_dir / 'cpp_tests'
+        if not scaffold_src.exists():
+            return None
+        target_base = Path(out_dir) if out_dir else Path(repo)
+        injected_dir = target_base / 'injected_whitebox_tests'
+        # If already present, reuse it
+        if injected_dir.exists():
+            return injected_dir
+        # Create injected dir and copy scaffold contents without any previously
+        # generated build artifacts (avoid copying 'build' cache from agent dir).
+        injected_dir.mkdir(parents=True, exist_ok=True)
+        for item in scaffold_src.iterdir():
+            name = item.name
+            # Skip previous build artifacts and large generated files
+            if name.lower() in ('build', 'test_run_output.txt'):
+                continue
+            dest = injected_dir / name
+            if item.is_dir():
+                shutil.copytree(item, dest, dirs_exist_ok=True, ignore=shutil.ignore_patterns('build', '*.o', '*.obj', '*.pdb'))
+            else:
+                shutil.copy2(item, dest)
+        # Write a marker file so reports can show this was injected
+        try:
+            (injected_dir / 'INJECTED_BY_AGENT').write_text('injected tests: google test scaffold', encoding='utf-8')
+        except Exception:
+            pass
+        return injected_dir
+    except Exception:
+        return None
+
+
+def try_run_injected_tests(repo: Path, results: list, out_dir: Path = None) -> bool:
+    """Attempt to inject and run the GoogleTest scaffold in the workspace.
+
+    Appends results to the provided results list. Returns True if an
+    injected scaffold was present or attempted (even if build failed),
+    otherwise False.
+    """
+    try:
+        injected = ensure_injected_googletest(repo, out_dir=out_dir)
+        if not injected:
+            return False
+        try:
+            okc, outc = try_cmake_build(injected)
+            results.append({'test': f'injected_cmake_build:{injected}', 'status': 'PASS' if okc else 'FAIL', 'detail': outc})
+            if okc:
+                inj_build = injected / 'build'
+                if inj_build.exists():
+                    ok, out = run_command('ctest --output-on-failure', cwd=str(inj_build))
+                    results.append({'test': f'injected_ctest:{inj_build}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+        except Exception as e:
+            results.append({'test': 'injected_tests', 'status': 'FAIL', 'detail': str(e)})
+        return True
+    except Exception:
+        return False
 
 # === PATCH HANDLER ===
 def apply_patches_from_dir(target_repo, patch_dir):
@@ -843,6 +1083,7 @@ def run_cpp_tests():
         if behavior == 'skip':
             results.append({"test": "C++ compile", "status": "SKIPPED", "detail": "Skipped by configuration (CPP_QT_BEHAVIOR=skip)."})
             results.append({"test": "C++ runtime", "status": "SKIPPED", "detail": "Skipped runtime tests by configuration."})
+            try_run_injected_tests(CPP_REPO, results, out_dir=None)
             return results
         contains_qt = False
         # check for .pro files at repo root
@@ -863,12 +1104,15 @@ def run_cpp_tests():
         if contains_qt and behavior != 'force':
             results.append({"test": "C++ compile", "status": "SKIPPED", "detail": "Skipped: Qt headers required (missing Qt development packages in runner)."})
             results.append({"test": "C++ runtime", "status": "SKIPPED", "detail": "Skipped runtime tests because Qt is not available in the test environment."})
+            try_run_injected_tests(CPP_REPO, results, out_dir=None)
             return results
     except Exception:
         # If detection fails, proceed with normal compile attempt
         pass
     if not cpp_files:
         results.append({"test": "C++ compile/run", "status": "FAIL", "detail": "No C++ files found"})
+        # If no C++ sources are present, still attempt to run injected whitebox tests
+        try_run_injected_tests(CPP_REPO, results, out_dir=None)
         return results
     exe_name = "main.exe" if os.name == "nt" else "main"
 
@@ -878,22 +1122,25 @@ def run_cpp_tests():
     # Auto-skip builds when host compiler lacks C++17 support to avoid noisy failures
     try:
         ok_cxx17, cxx17_msg = supports_cxx17()
+        skip_repo_build = False
         if not ok_cxx17:
+            # Record that compilation of the repository sources was skipped due to missing C++17
             results.append({"test": "C++ compile", "status": "SKIPPED", "detail": f"Skipped: host compiler lacks C++17 support. {cxx17_msg}."})
             results.append({"test": "C++ runtime", "status": "SKIPPED", "detail": "Skipped runtime tests because host compiler does not support C++17."})
-            return results
+            # do not return here; continue to attempt unit test discovery and injected tests
+            skip_repo_build = True
     except Exception:
         # If detection fails for any reason, proceed with normal build attempt
         pass
     try:
         # prefer .pro/qmake (search recursively; projects may place .pro in subfolders)
         pro_files = list(CPP_REPO.rglob("*.pro"))
-        if pro_files:
+        if pro_files and not skip_repo_build:
             ok, out = try_qmake_build(CPP_REPO)
             if ok:
                 built_exe = out if isinstance(out, str) and out.endswith('.exe') else _find_executable(CPP_REPO)
         # if not built by qmake, try cmake
-        if not built_exe:
+        if not built_exe and not skip_repo_build:
             cmake_file = CPP_REPO / "CMakeLists.txt"
             if cmake_file.exists():
                 ok, out = try_cmake_build(CPP_REPO)

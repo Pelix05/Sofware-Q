@@ -1,19 +1,24 @@
 {
-  "timestamp": "2025-12-07T10:08:07.224116Z",
-  "repo": "agent\\workspaces\\utnubu__source_20251205_175825\\cpp_project",
+  "timestamp": "2025-12-12T08:10:24.390082Z",
+  "repo": "d:\\semester5\\quality\\ai-agent-project\\agent\\cpp_tests",
   "git_commit": null,
   "mode": "cpp",
   "environment": {
-    "os": "Windows-11-10.0.26100-SP0",
-    "python_version": "3.13.3 (tags/v3.13.3:6280bb5, Apr  8 2025, 14:47:33) [MSC v.1943 64 bit (AMD64)]",
+    "os": "Windows-11-10.0.26200-SP0",
+    "python_version": "3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]",
     "cpp_qt_behavior": "auto"
   },
-  "duration_seconds": 0.132,
+  "duration_seconds": 4.064,
   "tests": [
     {
-      "test": "C++ compile/run",
-      "status": "FAIL",
-      "detail": "No C++ files found"
+      "test": "C++ compile",
+      "status": "SKIPPED",
+      "detail": "Skipped: host compiler lacks C++17 support. No compiler with C++17 support detected."
+    },
+    {
+      "test": "C++ runtime",
+      "status": "SKIPPED",
+      "detail": "Skipped runtime tests because host compiler does not support C++17."
     },
     {
       "test": "Resource Management",
@@ -71,32 +76,456 @@
       "detail": "JSON loaded: {'__import__': 'os'}"
     },
     {
-      "test": "Generated Tests",
+      "test": "TC-1.1: Rectangle Drawing",
       "status": "SKIPPED",
-      "detail": "No generated_tests.json found in workspace or output dirs."
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-1.2: Circle Drawing",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-1.3: Diamond Drawing",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-1.4: Arrow Drawing",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-2.1: Element Connection",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-2.2: Auto Alignment",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-2.3: Smart Routing",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-3.1: Element Selection",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-3.2: Element Movement",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-3.3: Element Deletion",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-3.4: Copy/Paste",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-3.5: Undo/Redo",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-4.1: Color Settings",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-4.2: Size Adjustment",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-4.3: Label Editing",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-4.4: Shape Type Conversion",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-5.1: Load Template",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-5.2: Save as Template",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-6.1: Export PNG",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-6.2: Export PDF",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-6.3: Export SVG",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-7.1: Import Visio",
+      "status": "SKIPPED",
+      "detail": "No executable commands (all lines are comments or empty)."
+    },
+    {
+      "test": "TC-1.1: Rectangle Drawing",
+      "name": "TC-1.1: Rectangle Drawing",
+      "title": "Draw Rectangle",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-1.1] Rectangle Drawing Test",
+        "echo Verifying rectangle drawing capability...",
+        "echo Rectangle tool: OK"
+      ],
+      "expected": "Rectangle tool: OK",
+      "description": "Verify that rectangles can be drawn and displayed correctly"
+    },
+    {
+      "test": "TC-1.2: Circle Drawing",
+      "name": "TC-1.2: Circle Drawing",
+      "title": "Draw Circle",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-1.2] Circle Drawing Test",
+        "echo Verifying circle drawing capability...",
+        "echo Circle tool: OK"
+      ],
+      "expected": "Circle tool: OK",
+      "description": "Verify that circles can be drawn and displayed correctly"
+    },
+    {
+      "test": "TC-1.3: Diamond Drawing",
+      "name": "TC-1.3: Diamond Drawing",
+      "title": "Draw Diamond",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-1.3] Diamond Drawing Test",
+        "echo Verifying diamond drawing capability...",
+        "echo Diamond tool: OK"
+      ],
+      "expected": "Diamond tool: OK",
+      "description": "Verify that diamonds can be drawn and displayed correctly"
+    },
+    {
+      "test": "TC-1.4: Arrow Drawing",
+      "name": "TC-1.4: Arrow Drawing",
+      "title": "Draw Arrow",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-1.4] Arrow Drawing Test",
+        "echo Verifying arrow drawing capability...",
+        "echo Arrow tool: OK"
+      ],
+      "expected": "Arrow tool: OK",
+      "description": "Verify that arrows can be drawn with correct direction"
+    },
+    {
+      "test": "TC-2.1: Element Connection",
+      "name": "TC-2.1: Element Connection",
+      "title": "Connect Elements",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-2.1] Element Connection Test",
+        "echo Verifying connection capability...",
+        "echo Connection tool: OK"
+      ],
+      "expected": "Connection tool: OK",
+      "description": "Verify that elements can be connected with lines"
+    },
+    {
+      "test": "TC-2.2: Auto Alignment",
+      "name": "TC-2.2: Auto Alignment",
+      "title": "Auto-align Elements",
+      "priority": "MEDIUM",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-2.2] Auto Alignment Test",
+        "echo Verifying alignment capability...",
+        "echo Alignment tool: OK"
+      ],
+      "expected": "Alignment tool: OK",
+      "description": "Verify that auto-alignment works for multiple elements"
+    },
+    {
+      "test": "TC-2.3: Smart Routing",
+      "name": "TC-2.3: Smart Routing",
+      "title": "Smart Connection Routing",
+      "priority": "MEDIUM",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-2.3] Smart Routing Test",
+        "echo Verifying smart routing capability...",
+        "echo Smart routing: OK"
+      ],
+      "expected": "Smart routing: OK",
+      "description": "Verify that connections automatically route around obstacles"
+    },
+    {
+      "test": "TC-3.1: Element Selection",
+      "name": "TC-3.1: Element Selection",
+      "title": "Select Elements",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-3.1] Element Selection Test",
+        "echo Verifying element selection...",
+        "echo Selection: OK"
+      ],
+      "expected": "Selection: OK",
+      "description": "Verify that elements can be selected with visual feedback"
+    },
+    {
+      "test": "TC-3.2: Element Movement",
+      "name": "TC-3.2: Element Movement",
+      "title": "Move Elements",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-3.2] Element Movement Test",
+        "echo Verifying element movement...",
+        "echo Movement: OK"
+      ],
+      "expected": "Movement: OK",
+      "description": "Verify that elements can be dragged smoothly and connections follow"
+    },
+    {
+      "test": "TC-3.3: Element Deletion",
+      "name": "TC-3.3: Element Deletion",
+      "title": "Delete Elements",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-3.3] Element Deletion Test",
+        "echo Verifying element deletion...",
+        "echo Deletion: OK"
+      ],
+      "expected": "Deletion: OK",
+      "description": "Verify that elements and their connections are deleted"
+    },
+    {
+      "test": "TC-3.4: Copy/Paste",
+      "name": "TC-3.4: Copy/Paste",
+      "title": "Copy and Paste Elements",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-3.4] Copy/Paste Test",
+        "echo Verifying copy/paste functionality...",
+        "echo Copy/Paste: OK"
+      ],
+      "expected": "Copy/Paste: OK",
+      "description": "Verify that elements can be duplicated with copy/paste"
+    },
+    {
+      "test": "TC-3.5: Undo/Redo",
+      "name": "TC-3.5: Undo/Redo",
+      "title": "Undo and Redo Operations",
+      "priority": "MEDIUM",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-3.5] Undo/Redo Test",
+        "echo Verifying undo/redo functionality...",
+        "echo Undo/Redo: OK"
+      ],
+      "expected": "Undo/Redo: OK",
+      "description": "Verify that operations can be undone and redone"
+    },
+    {
+      "test": "TC-4.1: Color Settings",
+      "name": "TC-4.1: Color Settings",
+      "title": "Change Element Colors",
+      "priority": "MEDIUM",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-4.1] Color Settings Test",
+        "echo Verifying color property support...",
+        "echo Color settings: OK"
+      ],
+      "expected": "Color settings: OK",
+      "description": "Verify that element colors can be changed via property panel"
+    },
+    {
+      "test": "TC-4.2: Size Adjustment",
+      "name": "TC-4.2: Size Adjustment",
+      "title": "Adjust Element Size",
+      "priority": "MEDIUM",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-4.2] Size Adjustment Test",
+        "echo Verifying size adjustment...",
+        "echo Size adjustment: OK"
+      ],
+      "expected": "Size adjustment: OK",
+      "description": "Verify that element size can be adjusted via handles or properties"
+    },
+    {
+      "test": "TC-4.3: Label Editing",
+      "name": "TC-4.3: Label Editing",
+      "title": "Edit Element Labels",
+      "priority": "MEDIUM",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-4.3] Label Editing Test",
+        "echo Verifying label editing...",
+        "echo Label editing: OK"
+      ],
+      "expected": "Label editing: OK",
+      "description": "Verify that text labels can be added and edited"
+    },
+    {
+      "test": "TC-4.4: Shape Type Conversion",
+      "name": "TC-4.4: Shape Type Conversion",
+      "title": "Convert Shape Types",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-4.4] Shape Type Conversion Test",
+        "echo Verifying shape type conversion...",
+        "echo Shape conversion: OK"
+      ],
+      "expected": "Shape conversion: OK",
+      "description": "Verify that shapes can be converted while preserving properties"
+    },
+    {
+      "test": "TC-5.1: Load Template",
+      "name": "TC-5.1: Load Template",
+      "title": "Load Diagram Template",
+      "priority": "MEDIUM",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-5.1] Load Template Test",
+        "echo Verifying template loading...",
+        "echo Template loading: OK"
+      ],
+      "expected": "Template loading: OK",
+      "description": "Verify that predefined templates can be loaded"
+    },
+    {
+      "test": "TC-5.2: Save as Template",
+      "name": "TC-5.2: Save as Template",
+      "title": "Save Diagram as Template",
+      "priority": "LOW",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-5.2] Save as Template Test",
+        "echo Verifying template saving...",
+        "echo Template saving: OK"
+      ],
+      "expected": "Template saving: OK",
+      "description": "Verify that current diagram can be saved as template"
+    },
+    {
+      "test": "TC-6.1: Export PNG",
+      "name": "TC-6.1: Export PNG",
+      "title": "Export Diagram as PNG",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-6.1] Export PNG Test",
+        "echo Verifying PNG export...",
+        "echo PNG export: OK"
+      ],
+      "expected": "PNG export: OK",
+      "description": "Verify that diagrams can be exported as PNG images"
+    },
+    {
+      "test": "TC-6.2: Export PDF",
+      "name": "TC-6.2: Export PDF",
+      "title": "Export Diagram as PDF",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-6.2] Export PDF Test",
+        "echo Verifying PDF export...",
+        "echo PDF export: OK"
+      ],
+      "expected": "PDF export: OK",
+      "description": "Verify that diagrams can be exported as PDF documents"
+    },
+    {
+      "test": "TC-6.3: Export SVG",
+      "name": "TC-6.3: Export SVG",
+      "title": "Export Diagram as SVG",
+      "priority": "HIGH",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-6.3] Export SVG Test",
+        "echo Verifying SVG export...",
+        "echo SVG export: OK"
+      ],
+      "expected": "SVG export: OK",
+      "description": "Verify that diagrams can be exported as SVG vectors"
+    },
+    {
+      "test": "TC-7.1: Import Visio",
+      "name": "TC-7.1: Import Visio",
+      "title": "Import Visio File",
+      "priority": "MEDIUM",
+      "status": "SKIPPED",
+      "commands": [
+        "echo [TC-7.1] Import Visio Test",
+        "echo Verifying Visio import...",
+        "echo Visio import: OK"
+      ],
+      "expected": "Visio import: OK",
+      "description": "Verify that Visio files can be imported"
     },
     {
       "test": "GUI smoke (AHK)",
       "status": "FAIL",
-      "detail": "$ powershell -NoProfile -ExecutionPolicy Bypass -Command $ErrorActionPreference='SilentlyContinue'; $env:AHK_EXE_PATH='D:\\\\flowchart_test\\\\diagramscene.exe'; $env:AHK_LOG_PATH='D:\\\u65b0\u5efa\u6587\u4ef6\u5939\\School\\project\\\u8f6f\u4ef6\u6d4b\u8bd5\u5b9e\u9a8c\\Sofware-Q\\agent\\workspaces\\utnubu__source_20251205_175825\\ahk_result.txt'; New-Item -ItemType Directory -Force (Split-Path -LiteralPath $env:AHK_LOG_PATH) | Out-Null; New-Item -ItemType File -Force -Path $env:AHK_LOG_PATH | Out-Null; & 'C:\\\\Program Files\\\\AutoHotkey\\\\AutoHotkey.exe' 'D:\\\\flowchart_test\\\\diagramscene_autohotkey_smoke.ahk'; $log = Get-Content -LiteralPath $env:AHK_LOG_PATH; Write-Output $log; if ($log -like '*FAIL:*') { exit 1 } elseif ($log -like '*PASS: smoke completed*') { exit 0 } else { exit 1 }\n'Out-Null' \u4e0d\u662f\u5185\u90e8\u6216\u5916\u90e8\u547d\u4ee4\uff0c\u4e5f\u4e0d\u662f\u53ef\u8fd0\u884c\u7684\u7a0b\u5e8f\n\u6216\u6279\u5904\u7406\u6587\u4ef6\u3002\n"
+      "detail": "$ powershell -NoProfile -ExecutionPolicy Bypass -File d:\\semester5\\quality\\ai-agent-project\\agent\\cpp_tests\\dynamic_test_out\\run_ahk.ps1\nWindows PowerShell\nCopyright (C) Microsoft Corporation. All rights reserved.\n\nInstall the latest PowerShell for new features and improvements! https://aka.ms/PSWindows\n\nThe argument 'd:\\semester5\\quality\\ai-agent-project\\agent\\cpp_tests\\dynamic_test_out\\run_ahk.ps1' to the -File parameter does not exist. Provide the path to an existing '.ps1' file as an argument to the -File parameter.\n"
     }
   ],
   "pre_tests": [
     {
-      "test": "C++ compile/run",
-      "status": "FAIL",
-      "detail": "No C++ files found"
+      "test": "C++ compile",
+      "status": "SKIPPED",
+      "detail": "Skipped: host compiler lacks C++17 support. No compiler with C++17 support detected."
+    },
+    {
+      "test": "C++ runtime",
+      "status": "SKIPPED",
+      "detail": "Skipped runtime tests because host compiler does not support C++17."
     }
   ],
   "ui_summary": {
-    "ui_text": "Summary: 11 PASS, 2 FAIL, 1 SKIPPED\nTop results:\n- C++ compile/run: FAIL\n- Resource Management: PASS\n- Concurrency: PASS\n- Boundary Test: PASS\n- Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: PASS\n- Boundary Test -1: PASS\n- Boundary Test 0: PASS\n- Boundary Test 10000000000.0: PASS\n- Boundary Test ('int', 'a'): PASS\n- Boundary Test ('float', 'b'): PASS\n- Env Test: PASS\n- Dynamic Code Test: PASS\n- Generated Tests: SKIPPED\n- GUI smoke (AHK): FAIL",
-    "ui_html": "<style>\n        body {font-family: Arial, Helvetica, sans-serif;}\n        .summary {margin-bottom: 1em}\n        .what {background:#f7f9fc;padding:10px;border-radius:6px;margin-bottom:1em}\n        table.test-report {border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; table-layout: fixed}\n        table.test-report th, table.test-report td {border: 1px solid #ddd; padding: 8px}\n        table.test-report th {background-color: #f4f6f8; text-align: left}\n        tr.pass {background-color: #e6ffed}\n        tr.fail {background-color: #ffecec}\n        tr.skip {background-color: #fff7e6}\n        td.detail {max-width: 60ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}\n        td.test {max-width: 40ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}\n        .badge {font-weight: bold; padding: 2px 6px; border-radius: 4px}\n        .badge.pass {color: #006400}\n        .badge.fail {color: #8b0000}\n        .badge.skip {color: #8a6d00}\n        </style>\n<h2>Dynamic Analysis Report</h2>\n<div class=\"summary\"><strong>Summary: 11 PASS, 2 FAIL, 1 SKIPPED</strong></div>\n<div class=\"what\"><h3>What we tested</h3><ul>\n<li><strong>C++ compile/run</strong>: Attempts compilation of C++ sources (fallback when build system not available).</li>\n<li><strong>Resource Management</strong>: Verifies that temporary resources (files, handles) are managed correctly.</li>\n<li><strong>Concurrency</strong>: Executes simple threaded tasks to detect obvious deadlocks or exceptions.</li>\n<li><strong>Boundary Test</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test -1</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test 0</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test 10000000000.0</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test (&#x27;int&#x27;, &#x27;a&#x27;)</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test (&#x27;float&#x27;, &#x27;b&#x27;)</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Env Test</strong>: Validates that required environment variables are set for runtime.</li>\n<li><strong>Dynamic Code Test</strong>: Runs a small dynamic code execution check to ensure sandboxing and error handling.</li>\n<li><strong>Generated Tests</strong>: LLM-generated integration tests for this workspace (commands supplied in generated_tests.json).</li>\n<li><strong>GUI smoke (AHK)</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n</ul></div>\n<table class=\"test-report\"><thead><tr><th style=\"width:4%\">#</th><th style=\"width:30%\">Test</th><th style=\"width:10%\">Status</th><th style=\"width:56%\">Details</th></tr></thead><tbody>\n<tr class=\"fail\"><td>1</td><td class=\"test\">C++ compile/run</td><td><span class=\"badge fail\">FAIL</span></td><td class=\"detail\">No C++ files found</td></tr>\n<tr class=\"pass\"><td>2</td><td class=\"test\">Resource Management</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Read success: Test</td></tr>\n<tr class=\"pass\"><td>3</td><td class=\"test\">Concurrency</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Task 0 done\nTask 1 done\nTask 2 done</td></tr>\n<tr class=\"pass\"><td>4</td><td class=\"test\">Boundary Test</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value  handled</td></tr>\n<tr class=\"pass\"><td>5</td><td class=\"test\">Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa handled</td></tr>\n<tr class=\"pass\"><td>6</td><td class=\"test\">Boundary Test -1</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value -1 handled</td></tr>\n<tr class=\"pass\"><td>7</td><td class=\"test\">Boundary Test 0</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value 0 handled</td></tr>\n<tr class=\"pass\"><td>8</td><td class=\"test\">Boundary Test 10000000000.0</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value 10000000000.0 handled</td></tr>\n<tr class=\"pass\"><td>9</td><td class=\"test\">Boundary Test (&#x27;int&#x27;, &#x27;a&#x27;)</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Caught expected exception: invalid literal for int() with base 10: &#x27;a&#x27;</td></tr>\n<tr class=\"pass\"><td>10</td><td class=\"test\">Boundary Test (&#x27;float&#x27;, &#x27;b&#x27;)</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Caught expected exception: could not convert string to float: &#x27;b&#x27;</td></tr>\n<tr class=\"pass\"><td>11</td><td class=\"test\">Env Test</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">TEST_MODE set to 1</td></tr>\n<tr class=\"pass\"><td>12</td><td class=\"test\">Dynamic Code Test</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">JSON loaded: {&#x27;__import__&#x27;: &#x27;os&#x27;}</td></tr>\n<tr class=\"skip\"><td>13</td><td class=\"test\">Generated Tests</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No generated_tests.json found in workspace or output dirs.</td></tr>\n<tr class=\"fail\"><td>14</td><td class=\"test\">GUI smoke (AHK)</td><td><span class=\"badge fail\">FAIL</span></td><td class=\"detail\">$ powershell -NoProfile -ExecutionPolicy Bypass -Command $ErrorActionPreference=&#x27;SilentlyContinue&#x27;; $env:AHK_EXE_PATH=&#x27;D:\\\\flowchart_test\\\\diagramscene.exe&#x27;; $env:AHK_LOG_PATH=&#x27;D:\\\u65b0\u5efa\u6587\u4ef6\u5939\\School\\project\\\u8f6f\u4ef6\u6d4b\u8bd5\u5b9e\u9a8c\\Sofware-Q\\agent\\workspaces\\utnubu__source_20251205_175825\\ahk_result.txt&#x27;; New-Item -ItemType Directory -Force (Split-Path -LiteralPath $env:AHK_LOG_PATH) | Out-Null; New-Item -ItemType File -Force -Path $env:AHK_LOG_PATH | Out-Null; &amp; &#x27;C:\\\\Program Files\\\\AutoHotkey\\\\AutoHotkey.exe&#x27; &#x27;D:\\\\flowchart_test\\\\diagramscene_autohotkey_smoke.ahk&#x27;; $log = Get-Content -LiteralPath $env:AHK_LOG_PATH; Write-Output $log; if ($log -like &#x27;*FAIL:*&#x27;) { exit 1 } elseif ($log -like &#x27;*PASS: smoke completed*&#x27;) { exit 0 } else { exit 1 }\n&#x27;Out-Null&#x27; \u4e0d\u662f\u5185\u90e8\u6216\u5916\u90e8\u547d\u4ee4\uff0c\u4e5f\u4e0d\u662f\u53ef\u8fd0\u884c\u7684\u7a0b\u5e8f\n\u6216\u6279\u5904\u7406\u6587\u4ef6\u3002</td></tr>\n</tbody></table>\n<h3>Recommendations</h3><ul>\n<li>There are failing checks \u2014 inspect failing test details and run the failing commands manually to reproduce and debug.</li>\n</ul>",
+    "ui_text": "Summary: 11 PASS, 1 FAIL, 46 SKIPPED\ndiagramscene_ultima\\build\\Desktop_Qt_6_7_2_MinGW_64_bit-Debug\\debug\\moc_diagramscene.cpp:22:2: error: #error \"This file was generated using the moc from 6.7.2. It\" [preprocessorErrorDirective]\n#error \"This file was generated using the moc from 6.7.2. It\"\n ^\ndiagramscene_ultima\\build\\Desktop_Qt_6_7_2_MinGW_64_bit-Debug\\debug\\moc_diagramtextitem.cpp:22:2: error: #error \"This file was generated using the moc from 6.7.2. It\" [preprocessorErrorDirective]\n#error \"This file was generated using the moc from 6.7.2. It\"\n ^\nTop results:\n- C++ compile: SKIPPED\n- C++ runtime: SKIPPED\n- Resource Management: PASS\n- Concurrency: PASS\n- Boundary Test: PASS\n- Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa: PASS\n- Boundary Test -1: PASS\n- Boundary Test 0: PASS\n- Boundary Test 10000000000.0: PASS\n- Boundary Test ('int', 'a'): PASS\n- Boundary Test ('float', 'b'): PASS\n- Env Test: PASS\n- Dynamic Code Test: PASS\n- TC-1.1: Rectangle Drawing: SKIPPED\n- TC-1.2: Circle Drawing: SKIPPED\n- TC-1.3: Diamond Drawing: SKIPPED\n- TC-1.4: Arrow Drawing: SKIPPED\n- TC-2.1: Element Connection: SKIPPED\n- TC-2.2: Auto Alignment: SKIPPED\n- TC-2.3: Smart Routing: SKIPPED\n- TC-3.1: Element Selection: SKIPPED\n- TC-3.2: Element Movement: SKIPPED\n- TC-3.3: Element Deletion: SKIPPED\n- TC-3.4: Copy/Paste: SKIPPED\n- TC-3.5: Undo/Redo: SKIPPED\n- TC-4.1: Color Settings: SKIPPED\n- TC-4.2: Size Adjustment: SKIPPED\n- TC-4.3: Label Editing: SKIPPED\n- TC-4.4: Shape Type Conversion: SKIPPED\n- TC-5.1: Load Template: SKIPPED\n- TC-5.2: Save as Template: SKIPPED\n- TC-6.1: Export PNG: SKIPPED\n- TC-6.2: Export PDF: SKIPPED\n- TC-6.3: Export SVG: SKIPPED\n- TC-7.1: Import Visio: SKIPPED\n- TC-1.1: Rectangle Drawing: SKIPPED\n- TC-1.2: Circle Drawing: SKIPPED\n- TC-1.3: Diamond Drawing: SKIPPED\n- TC-1.4: Arrow Drawing: SKIPPED\n- TC-2.1: Element Connection: SKIPPED\n- TC-2.2: Auto Alignment: SKIPPED\n- TC-2.3: Smart Routing: SKIPPED\n- TC-3.1: Element Selection: SKIPPED\n- TC-3.2: Element Movement: SKIPPED\n- TC-3.3: Element Deletion: SKIPPED\n- TC-3.4: Copy/Paste: SKIPPED\n- TC-3.5: Undo/Redo: SKIPPED\n- TC-4.1: Color Settings: SKIPPED\n- TC-4.2: Size Adjustment: SKIPPED\n- TC-4.3: Label Editing: SKIPPED\n- TC-4.4: Shape Type Conversion: SKIPPED\n- TC-5.1: Load Template: SKIPPED\n- TC-5.2: Save as Template: SKIPPED\n- TC-6.1: Export PNG: SKIPPED\n- TC-6.2: Export PDF: SKIPPED\n- TC-6.3: Export SVG: SKIPPED\n- TC-7.1: Import Visio: SKIPPED\n- GUI smoke (AHK): FAIL",
+    "ui_html": "<style>\n        body {font-family: Arial, Helvetica, sans-serif;}\n        .summary {margin-bottom: 1em}\n        .what {background:#f7f9fc;padding:10px;border-radius:6px;margin-bottom:1em}\n        table.test-report {border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; table-layout: fixed}\n        table.test-report th, table.test-report td {border: 1px solid #ddd; padding: 8px}\n        table.test-report th {background-color: #f4f6f8; text-align: left}\n        tr.pass {background-color: #e6ffed}\n        tr.fail {background-color: #ffecec}\n        tr.skip {background-color: #fff7e6}\n        td.detail {max-width: 60ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}\n        td.test {max-width: 40ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}\n        .badge {font-weight: bold; padding: 2px 6px; border-radius: 4px}\n        .badge.pass {color: #006400}\n        .badge.fail {color: #8b0000}\n        .badge.skip {color: #8a6d00}\n        </style>\n<h2>Dynamic Analysis Report</h2>\n<div class=\"summary\"><strong>Summary: 11 PASS, 1 FAIL, 46 SKIPPED</strong></div>\n<div class=\"summary\"><strong>Static analysis:</strong> diagramscene_ultima\\build\\Desktop_Qt_6_7_2_MinGW_64_bit-Debug\\debug\\moc_diagramscene.cpp:22:2: error: #error &quot;This file was generated using the moc from 6.7.2. It&quot; [preprocessorErrorDirective]\n#error &quot;This file was generated using the moc from 6.7.2. It&quot;\n ^\ndiagramscene_ultima\\build\\Desktop_Qt_6_7_2_MinGW_64_bit-Debug\\debug\\moc_diagramtextitem.cpp:22:2: error: #error &quot;This file was generated using the moc from 6.7.2. It&quot; [preprocessorErrorDirective]\n#error &quot;This file was generated using the moc from 6.7.2. It&quot;\n ^</div>\n<div class=\"what\"><h3>What we tested</h3><ul>\n<li><strong>C++ compile</strong>: Attempts compilation of C++ sources (fallback when build system not available).</li>\n<li><strong>C++ runtime</strong>: Builds and runs the C++ binary (checks for crashes and expected behavior).</li>\n<li><strong>Resource Management</strong>: Verifies that temporary resources (files, handles) are managed correctly.</li>\n<li><strong>Concurrency</strong>: Executes simple threaded tasks to detect obvious deadlocks or exceptions.</li>\n<li><strong>Boundary Test</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test -1</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test 0</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test 10000000000.0</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test (&#x27;int&#x27;, &#x27;a&#x27;)</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Boundary Test (&#x27;float&#x27;, &#x27;b&#x27;)</strong>: Feeds extreme or malformed inputs to check boundary handling.</li>\n<li><strong>Env Test</strong>: Validates that required environment variables are set for runtime.</li>\n<li><strong>Dynamic Code Test</strong>: Runs a small dynamic code execution check to ensure sandboxing and error handling.</li>\n<li><strong>TC-1.1: Rectangle Drawing</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-1.2: Circle Drawing</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-1.3: Diamond Drawing</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-1.4: Arrow Drawing</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-2.1: Element Connection</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-2.2: Auto Alignment</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-2.3: Smart Routing</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-3.1: Element Selection</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-3.2: Element Movement</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-3.3: Element Deletion</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-3.4: Copy/Paste</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-3.5: Undo/Redo</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-4.1: Color Settings</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-4.2: Size Adjustment</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-4.3: Label Editing</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-4.4: Shape Type Conversion</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-5.1: Load Template</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-5.2: Save as Template</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-6.1: Export PNG</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-6.2: Export PDF</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-6.3: Export SVG</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>TC-7.1: Import Visio</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n<li><strong>GUI smoke (AHK)</strong>: Automatic or workspace-provided test. See details for commands and output.</li>\n</ul></div>\n<table class=\"test-report\"><thead><tr><th style=\"width:4%\">#</th><th style=\"width:30%\">Test</th><th style=\"width:10%\">Status</th><th style=\"width:56%\">Details</th></tr></thead><tbody>\n<tr class=\"skip\"><td>1</td><td class=\"test\">C++ compile</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">Skipped: host compiler lacks C++17 support. No compiler with C++17 support detected.</td></tr>\n<tr class=\"skip\"><td>2</td><td class=\"test\">C++ runtime</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">Skipped runtime tests because host compiler does not support C++17.</td></tr>\n<tr class=\"pass\"><td>3</td><td class=\"test\">Resource Management</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Read success: Test</td></tr>\n<tr class=\"pass\"><td>4</td><td class=\"test\">Concurrency</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Task 0 done\nTask 1 done\nTask 2 done</td></tr>\n<tr class=\"pass\"><td>5</td><td class=\"test\">Boundary Test</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value  handled</td></tr>\n<tr class=\"pass\"><td>6</td><td class=\"test\">Boundary Test aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa handled</td></tr>\n<tr class=\"pass\"><td>7</td><td class=\"test\">Boundary Test -1</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value -1 handled</td></tr>\n<tr class=\"pass\"><td>8</td><td class=\"test\">Boundary Test 0</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value 0 handled</td></tr>\n<tr class=\"pass\"><td>9</td><td class=\"test\">Boundary Test 10000000000.0</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Value 10000000000.0 handled</td></tr>\n<tr class=\"pass\"><td>10</td><td class=\"test\">Boundary Test (&#x27;int&#x27;, &#x27;a&#x27;)</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Caught expected exception: invalid literal for int() with base 10: &#x27;a&#x27;</td></tr>\n<tr class=\"pass\"><td>11</td><td class=\"test\">Boundary Test (&#x27;float&#x27;, &#x27;b&#x27;)</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">Caught expected exception: could not convert string to float: &#x27;b&#x27;</td></tr>\n<tr class=\"pass\"><td>12</td><td class=\"test\">Env Test</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">TEST_MODE set to 1</td></tr>\n<tr class=\"pass\"><td>13</td><td class=\"test\">Dynamic Code Test</td><td><span class=\"badge pass\">PASS</span></td><td class=\"detail\">JSON loaded: {&#x27;__import__&#x27;: &#x27;os&#x27;}</td></tr>\n<tr class=\"skip\"><td>14</td><td class=\"test\">TC-1.1: Rectangle Drawing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>15</td><td class=\"test\">TC-1.2: Circle Drawing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>16</td><td class=\"test\">TC-1.3: Diamond Drawing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>17</td><td class=\"test\">TC-1.4: Arrow Drawing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>18</td><td class=\"test\">TC-2.1: Element Connection</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>19</td><td class=\"test\">TC-2.2: Auto Alignment</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>20</td><td class=\"test\">TC-2.3: Smart Routing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>21</td><td class=\"test\">TC-3.1: Element Selection</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>22</td><td class=\"test\">TC-3.2: Element Movement</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>23</td><td class=\"test\">TC-3.3: Element Deletion</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>24</td><td class=\"test\">TC-3.4: Copy/Paste</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>25</td><td class=\"test\">TC-3.5: Undo/Redo</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>26</td><td class=\"test\">TC-4.1: Color Settings</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>27</td><td class=\"test\">TC-4.2: Size Adjustment</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>28</td><td class=\"test\">TC-4.3: Label Editing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>29</td><td class=\"test\">TC-4.4: Shape Type Conversion</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>30</td><td class=\"test\">TC-5.1: Load Template</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>31</td><td class=\"test\">TC-5.2: Save as Template</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>32</td><td class=\"test\">TC-6.1: Export PNG</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>33</td><td class=\"test\">TC-6.2: Export PDF</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>34</td><td class=\"test\">TC-6.3: Export SVG</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>35</td><td class=\"test\">TC-7.1: Import Visio</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\">No executable commands (all lines are comments or empty).</td></tr>\n<tr class=\"skip\"><td>36</td><td class=\"test\">TC-1.1: Rectangle Drawing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>37</td><td class=\"test\">TC-1.2: Circle Drawing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>38</td><td class=\"test\">TC-1.3: Diamond Drawing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>39</td><td class=\"test\">TC-1.4: Arrow Drawing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>40</td><td class=\"test\">TC-2.1: Element Connection</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>41</td><td class=\"test\">TC-2.2: Auto Alignment</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>42</td><td class=\"test\">TC-2.3: Smart Routing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>43</td><td class=\"test\">TC-3.1: Element Selection</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>44</td><td class=\"test\">TC-3.2: Element Movement</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>45</td><td class=\"test\">TC-3.3: Element Deletion</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>46</td><td class=\"test\">TC-3.4: Copy/Paste</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>47</td><td class=\"test\">TC-3.5: Undo/Redo</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>48</td><td class=\"test\">TC-4.1: Color Settings</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>49</td><td class=\"test\">TC-4.2: Size Adjustment</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>50</td><td class=\"test\">TC-4.3: Label Editing</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>51</td><td class=\"test\">TC-4.4: Shape Type Conversion</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>52</td><td class=\"test\">TC-5.1: Load Template</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>53</td><td class=\"test\">TC-5.2: Save as Template</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>54</td><td class=\"test\">TC-6.1: Export PNG</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>55</td><td class=\"test\">TC-6.2: Export PDF</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>56</td><td class=\"test\">TC-6.3: Export SVG</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"skip\"><td>57</td><td class=\"test\">TC-7.1: Import Visio</td><td><span class=\"badge skip\">SKIPPED</span></td><td class=\"detail\"></td></tr>\n<tr class=\"fail\"><td>58</td><td class=\"test\">GUI smoke (AHK)</td><td><span class=\"badge fail\">FAIL</span></td><td class=\"detail\">$ powershell -NoProfile -ExecutionPolicy Bypass -File d:\\semester5\\quality\\ai-agent-project\\agent\\cpp_tests\\dynamic_test_out\\run_ahk.ps1\nWindows PowerShell\nCopyright (C) Microsoft Corporation. All rights reserved.\n\nInstall the latest PowerShell for new features and improvements! https://aka.ms/PSWindows\n\nThe argument &#x27;d:\\semester5\\quality\\ai-agent-project\\agent\\cpp_tests\\dynamic_test_out\\run_ahk.ps1&#x27; to the -File parameter does not exist. Provide the path to an existing &#x27;.ps1&#x27; file as an argument to the -File parameter.</td></tr>\n</tbody></table>\n<h3>Recommendations</h3><ul>\n<li>There are failing checks \u2014 inspect failing test details and run the failing commands manually to reproduce and debug.</li>\n</ul>",
     "rows": [
       {
-        "test": "C++ compile/run",
-        "status": "FAIL",
-        "detail": "No C++ files found",
+        "test": "C++ compile",
+        "status": "SKIPPED",
+        "detail": "Skipped: host compiler lacks C++17 support. No compiler with C++17 support detected.",
         "description": "Attempts compilation of C++ sources (fallback when build system not available)."
+      },
+      {
+        "test": "C++ runtime",
+        "status": "SKIPPED",
+        "detail": "Skipped runtime tests because host compiler does not support C++17.",
+        "description": "Builds and runs the C++ binary (checks for crashes and expected behavior)."
       },
       {
         "test": "Resource Management",
@@ -165,15 +594,273 @@
         "description": "Runs a small dynamic code execution check to ensure sandboxing and error handling."
       },
       {
-        "test": "Generated Tests",
+        "test": "TC-1.1: Rectangle Drawing",
         "status": "SKIPPED",
-        "detail": "No generated_tests.json found in workspace or output dirs.",
-        "description": "LLM-generated integration tests for this workspace (commands supplied in generated_tests.json)."
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-1.2: Circle Drawing",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-1.3: Diamond Drawing",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-1.4: Arrow Drawing",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-2.1: Element Connection",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-2.2: Auto Alignment",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-2.3: Smart Routing",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-3.1: Element Selection",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-3.2: Element Movement",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-3.3: Element Deletion",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-3.4: Copy/Paste",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-3.5: Undo/Redo",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-4.1: Color Settings",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-4.2: Size Adjustment",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-4.3: Label Editing",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-4.4: Shape Type Conversion",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-5.1: Load Template",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-5.2: Save as Template",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-6.1: Export PNG",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-6.2: Export PDF",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-6.3: Export SVG",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-7.1: Import Visio",
+        "status": "SKIPPED",
+        "detail": "No executable commands (all lines are comments or empty).",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-1.1: Rectangle Drawing",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-1.2: Circle Drawing",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-1.3: Diamond Drawing",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-1.4: Arrow Drawing",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-2.1: Element Connection",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-2.2: Auto Alignment",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-2.3: Smart Routing",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-3.1: Element Selection",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-3.2: Element Movement",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-3.3: Element Deletion",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-3.4: Copy/Paste",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-3.5: Undo/Redo",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-4.1: Color Settings",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-4.2: Size Adjustment",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-4.3: Label Editing",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-4.4: Shape Type Conversion",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-5.1: Load Template",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-5.2: Save as Template",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-6.1: Export PNG",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-6.2: Export PDF",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-6.3: Export SVG",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
+      },
+      {
+        "test": "TC-7.1: Import Visio",
+        "status": "SKIPPED",
+        "detail": "",
+        "description": "Automatic or workspace-provided test. See details for commands and output."
       },
       {
         "test": "GUI smoke (AHK)",
         "status": "FAIL",
-        "detail": "$ powershell -NoProfile -ExecutionPolicy Bypass -Command $ErrorActionPreference='SilentlyContinue'; $env:AHK_EXE_PATH='D:\\\\flowchart_test\\\\diagramscene.exe'; $env:AHK_LOG_PATH='D:\\\u65b0\u5efa\u6587\u4ef6\u5939\\School\\project\\\u8f6f\u4ef6\u6d4b\u8bd5\u5b9e\u9a8c\\Sofware-Q\\agent\\workspaces\\utnubu__source_20251205_175825\\ahk_result.txt'; New-Item -ItemType Directory -Force (Split-Path -LiteralPath $env:AHK_LOG_PATH) | Out-Null; New-Item -ItemType File -Force -Path $env:AHK_LOG_PATH | Out-Null; & 'C:\\\\Program Files\\\\AutoHotkey\\\\AutoHotkey.exe' 'D:\\\\flowchart_test\\\\diagramscene_autohotkey_smoke.ahk'; $log = Get-Content -LiteralPath $env:AHK_LOG_PATH; Write-Output $log; if ($log -like '*FAIL:*') { exit 1 } elseif ($log -like '*PASS: smoke completed*') { exit 0 } else { exit 1 }\n'Out-Null' \u4e0d\u662f\u5185\u90e8\u6216\u5916\u90e8\u547d\u4ee4\uff0c\u4e5f\u4e0d\u662f\u53ef\u8fd0\u884c\u7684\u7a0b\u5e8f\n\u6216\u6279\u5904\u7406\u6587\u4ef6\u3002",
+        "detail": "$ powershell -NoProfile -ExecutionPolicy Bypass -File d:\\semester5\\quality\\ai-agent-project\\agent\\cpp_tests\\dynamic_test_out\\run_ahk.ps1\nWindows PowerShell\nCopyright (C) Microsoft Corporation. All rights reserved.\n\nInstall the latest PowerShell for new features and improvements! https://aka.ms/PSWindows\n\nThe argument 'd:\\semester5\\quality\\ai-agent-project\\agent\\cpp_tests\\dynamic_test_out\\run_ahk.ps1' to the -File parameter does not exist. Provide the path to an existing '.ps1' file as an argument to the -File parameter.",
         "description": "Automatic or workspace-provided test. See details for commands and output."
       }
     ]

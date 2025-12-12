@@ -4,327 +4,342 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>BlackHole — Code Analyzer</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{
-    --bg1:#0f1226; --bg2:#0b1630; --card:#0f1724; --accent:#7c5cff; --accent-2:#00d4ff; --muted:#9aa4bf; --glass: rgba(255,255,255,0.03);
-}
-*{box-sizing:border-box;font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
-html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#e6eef8}
-.app{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
-.frame{width:100%;max-width:1400px;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 10px 40px rgba(2,6,23,0.7);overflow:hidden;display:flex;gap:0}
-.sidebar{width:36%;min-width:320px;padding:24px 28px;background:linear-gradient(135deg, rgba(124,92,255,0.06), rgba(0,212,255,0.02));backdrop-filter: blur(6px);}
-.content{flex:1;padding:28px;display:flex;flex-direction:column;gap:16px}
-.brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
-.logo{width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:800;color:#071029}
-.title{font-size:18px;font-weight:800}
-.subtitle{font-size:13px;color:var(--muted);margin-top:2px}
-.section{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,0.03)}
-.file-area{display:flex;flex-direction:column;gap:12px}
-.drop{display:flex;align-items:center;gap:12px;padding:14px;border-radius:10px;border:1px dashed rgba(255,255,255,0.05);background:var(--glass);cursor:pointer}
-.drop:hover{border-color:rgba(124,92,255,0.35)}
-.file-meta{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.file-meta #wsInfo{max-width:220px;white-space:normal;word-break:break-word;overflow-wrap:anywhere}
-.btn{display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+:root{--bg1:#0f1226;--bg2:#0b1630;--muted:#4d5866;--accent:#7c5cff}
+body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#e6eef8}
+.app{padding:20px;max-width:1200px;margin:0 auto}
+.header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.controls{display:flex;gap:8px;align-items:center}
+.btn{padding:8px 12px;border-radius:8px;border:0;cursor:pointer;font-weight:700}
 .btn-primary{background:linear-gradient(90deg,var(--accent),#6b9bff);color:#071029}
-.btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
-.controls{display:flex;gap:10px}
-.progress-wrap{margin-top:8px}
-.progress{height:12px;background:rgba(255,255,255,0.04);border-radius:8px;overflow:hidden}
-.progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .25s}
-.status-line{font-size:13px;color:var(--muted);margin-top:8px}
-
-/* right side */
-.results{display:flex;flex-direction:column;gap:14px}
-.card{background:linear-gradient(180deg, rgba(6,9,20,0.6), rgba(6,9,20,0.45));border-radius:10px;padding:14px;border:1px solid rgba(255,255,255,0.03);min-height:80px}
-.results .card.code{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', monospace;white-space:pre-wrap;overflow:auto;max-height:520px;word-break:break-word;overflow-wrap:anywhere}
-.card .small, .card .detail {white-space:normal;word-break:break-word;overflow-wrap:anywhere}
-.analysis-grid, .analysis-grid > * {min-width:0}
-.analysis-panel{box-sizing:border-box}
-.analysis-panel .small{white-space:normal}
-.analysis-panel.code{white-space:normal}
-.panel-title{color:#cfe6ff}
-.panel-body{white-space:normal;word-break:break-word;overflow-wrap:anywhere}
-
-/* Ensure injected tables fit the card and wrap cells */
-#tableContent table{width:100% !important; table-layout: fixed !important; border-collapse: collapse;}
-#tableContent th, #tableContent td{white-space:normal; word-break:break-word; overflow-wrap:anywhere; padding:6px; border:1px solid rgba(255,255,255,0.04)}
-#tableContent{max-width:100%; box-sizing:border-box}
-
-/* file name wrap */
-#fileName{max-width:220px; white-space:normal; word-break:break-word; overflow-wrap:anywhere}
-.header-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.card{background:rgba(255,255,255,0.02);padding:12px;border-radius:8px;margin-top:12px}
+#tableContent{max-height:360px;overflow:auto;margin-top:8px}
+.panel-grid{display:flex;gap:12px;margin-top:12px}
+.panel{flex:1;min-height:140px;overflow:auto;padding:10px;background:#ffffff;color:#111;border-radius:8px}
+.panel .title{font-weight:700;margin-bottom:6px}
 .small{font-size:13px;color:var(--muted)}
-.badge{padding:6px 10px;border-radius:999px;font-weight:700}
-.badge.pass{background:rgba(10,160,90,0.12);color:#7ef3b6}
-.badge.fail{background:rgba(255,80,80,0.06);color:#ffb4b4}
-.badge.info{background:rgba(124,92,255,0.06);color:#bfb4ff}
+/* Table styling: white background, dark text for readability */
+#tableContent table{width:100%;border-collapse:collapse;background:#ffffff;color:#111;table-layout:fixed}
+#tableContent th, #tableContent td{padding:8px;border:1px solid #e6e6e6;vertical-align:top}
+#tableContent th{background:#f7f7f7;color:#222;text-align:left}
+#tableContent td{color:#222;white-space:normal;word-break:break-word;overflow-wrap:break-word}
 
-/* responsiveness */
-@media(max-width:920px){.frame{flex-direction:column}.sidebar{width:100%;min-width:unset}.content{padding:18px}.analysis-grid{flex-direction:column} }
+/* Column widths: name (30%), type (12%), result (8%), duration (10%), info (remaining) */
+#tableContent th:nth-child(1), #tableContent td:nth-child(1){width:30%}
+#tableContent th:nth-child(2), #tableContent td:nth-child(2){width:12%}
+#tableContent th:nth-child(3), #tableContent td:nth-child(3){width:8%}
+#tableContent th:nth-child(4), #tableContent td:nth-child(4){width:10%}
+#tableContent th:nth-child(5), #tableContent td:nth-child(5){width:40%}
+
+/* Progress bar */
+.progress-wrap{display:flex;flex-direction:column;gap:6px;min-width:220px}
+.progress{height:8px;background:rgba(255,255,255,0.08);border-radius:6px;overflow:hidden}
+.progress > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#6b9bff);transition:width .25s}
+.progressText{font-size:12px;color:var(--muted)}
+
 </style>
 </head>
 <body>
 <div class="app">
-    <div class="frame">
-        <div class="sidebar">
-            <div class="brand">
-                </div>
-            
-                <!-- Upload block moved into sidebar so left column stacks upload then analysis -->
-                <div class="section file-area" style="margin-top:12px">
-                    <label class="small">Upload Project (ZIP)</label>
-                            <div id="dropArea" class="drop">
-                        <input id="fileInput" type="file" accept=".zip" style="display:none">
-                        <div style="flex:1">
-                            <div id="fileName" style="font-weight:700;color:#dfe9ff">No file selected</div>
-                            <div style="font-size:12px;color:var(--muted);margin-top:6px">Drag & drop or click to choose.</div>
-                        </div>
-                        <div>
-                            <button id="chooseBtn" class="btn btn-ghost">Choose</button>
-                        </div>
-                    </div>
-
-                    <div class="file-meta">
-                        <div class="controls">
-                            <button id="uploadBtn" class="btn btn-primary">Upload & Analyze</button>
-                        </div>
-                        <div class="small" id="wsInfo">No workspace</div>
-                    </div>
-
-                    <div class="progress-wrap">
-                        <div class="progress"><i id="progressBar"></i></div>
-                        <div class="status-line" id="progressText">Idle</div>
-                    </div>
-                </div>
-
-                <!-- Moved: Static & Dynamic Analysis card now lives in the left sidebar under upload -->
-                <div id="analysisCard" class="section card" style="margin-top:12px;padding:12px;">
-                    <div style="font-weight:700;margin-bottom:6px">Static &amp; Dynamic Analysis</div>
-                    <div class="analysis-grid" style="display:flex;gap:12px;align-items:stretch;">
-                        <div id="staticContent" class="analysis-panel" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:300px;overflow:auto;display:flex;flex-direction:column;">
-                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Static</div>
-                            <div class="panel-body small" style="flex:1;overflow:auto">Results will appear here.</div>
-                        </div>
-                        <div id="dynamicContent" class="analysis-panel code" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:300px;overflow:auto;display:flex;flex-direction:column;">
-                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Dynamic</div>
-                            <div class="panel-body small" style="flex:1;overflow:auto">Runtime results will appear here.</div>
-                        </div>
-                    </div>
-                    <!-- White-box and Black-box summaries -->
-                    <div style="margin-top:12px;display:flex;gap:10px;align-items:stretch;">
-                        <div id="whiteBox" class="analysis-panel" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:160px;overflow:auto;display:flex;flex-direction:column;">
-                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">White-box</div>
-                            <div class="panel-body small" style="flex:1;overflow:auto">White-box summary will appear here.</div>
-                        </div>
-                        <div id="blackBox" class="analysis-panel" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:160px;overflow:auto;display:flex;flex-direction:column;">
-                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Black-box</div>
-                            <div class="panel-body small" style="flex:1;overflow:auto">Black-box summary will appear here.</div>
-                        </div>
-                    </div>
-                </div>
-
+    <div class="header">
+        <div>
+            <div style="font-weight:800;font-size:20px">Analysis Results</div>
+            <div id="lastUpdated" class="small">No results yet</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+            <div class="controls">
+                <input id="fileInput" type="file" accept=".zip" style="display:none">
+                <button id="chooseBtn" class="btn">Choose</button>
+                <button id="uploadBtn" class="btn btn-primary">Upload & Analyze</button>
             </div>
-
-            <div class="content">
-
-        <div class="content">
-            <div class="header-row">
-                <div style="display:flex;align-items:center;gap:12px">
-                    <div style="font-weight:800;font-size:20px">Analysis Results</div>
-                    <div class="small" id="lastUpdated">No results yet</div>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px">
-                    <div id="summaryBadge" class="badge info">Idle</div>
-                </div>
+            <div class="progress-wrap">
+                <div class="progress"><i id="progressBar"></i></div>
+                <div id="progressText" class="progressText">Idle</div>
             </div>
+        </div>
+    </div>
 
-            <div class="results">
-                <!-- Table card now occupies the entire right column and is larger -->
-                <div id="tableCard" class="card" style="margin-top:6px;overflow:hidden;flex:1;display:flex;flex-direction:column;">
-                    <div style="font-weight:700;margin-bottom:8px">Test Case Table</div>
-                    <div id="tableContent" class="small" style="flex:1;overflow:auto;display:block;box-sizing:border-box;max-height:calc(100vh - 220px);">The test results table will appear here when available.</div>
-                </div>
-            </div>
+    <div id="tableCard" class="card">
+        <div style="font-weight:700">Test Case Table</div>
+        <div id="tableContent" class="small">No test results yet.</div>
+    </div>
 
+    <div class="panel-grid">
+        <div id="staticContent" class="panel">
+            <div class="title">Static</div>
+            <pre class="small" id="staticBody">No static results.</pre>
+        </div>
+        <div id="dynamicContent" class="panel">
+            <div class="title">Dynamic</div>
+            <pre class="small" id="dynamicBody">No dynamic results.</pre>
+        </div>
+    </div>
+
+    <div class="panel-grid">
+        <div id="whiteBox" class="panel" style="display:none">
+            <div class="title">White Box Tests</div>
+            <div class="small" id="whiteBody">White-box summary will appear here.</div>
+        </div>
+        <div id="blackBox" class="panel" style="display:none">
+            <div class="title">Black Box Tests</div>
+            <div class="small" id="blackBody">Black-box summary will appear here.</div>
         </div>
     </div>
 </div>
 
 <script>
+// Simple, robust client script
 const fileInput = document.getElementById('fileInput');
 const chooseBtn = document.getElementById('chooseBtn');
-const dropArea = document.getElementById('dropArea');
-const fileName = document.getElementById('fileName');
 const uploadBtn = document.getElementById('uploadBtn');
-const progressBar = document.getElementById('progressBar');
-const progressText = document.getElementById('progressText');
-const wsInfo = document.getElementById('wsInfo');
-const staticContent = document.getElementById('staticContent');
-const dynamicContent = document.getElementById('dynamicContent');
 const tableContent = document.getElementById('tableContent');
-const summaryBadge = document.getElementById('summaryBadge');
+const staticBody = document.getElementById('staticBody');
+const dynamicBody = document.getElementById('dynamicBody');
+const whiteBody = document.getElementById('whiteBody');
+const blackBody = document.getElementById('blackBody');
 const lastUpdated = document.getElementById('lastUpdated');
 
-chooseBtn.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', () => {
-    fileName.textContent = fileInput.files.length ? fileInput.files[0].name : 'No file selected';
-});
+chooseBtn.addEventListener('click', ()=>fileInput.click());
+fileInput.addEventListener('change', ()=>{ chooseBtn.textContent = fileInput.files.length ? fileInput.files[0].name : 'Choose' });
 
-dropArea.addEventListener('dragover', e => { e.preventDefault(); dropArea.style.borderColor = 'rgba(124,92,255,0.35)'; });
-dropArea.addEventListener('dragleave', e => { dropArea.style.borderColor = 'rgba(255,255,255,0.03)'; });
-dropArea.addEventListener('drop', e => { e.preventDefault(); dropArea.style.borderColor = 'rgba(255,255,255,0.03)'; if (e.dataTransfer.files.length) { fileInput.files = e.dataTransfer.files; fileName.textContent = e.dataTransfer.files[0].name; }});
+function safeText(s){ if(!s) return ''; return String(s); }
 
-function setProgress(p, msg){ progressBar.style.width = (p||0) + '%'; progressText.textContent = msg || '' }
-
-async function pollStatus(ws){
-    try{
-        const s = await fetch('/status?ws=' + encodeURIComponent(ws));
-        const sd = await s.json();
-        const prog = (sd && typeof sd.progress === 'number') ? sd.progress : (sd && sd.progress ? parseInt(sd.progress) : null);
-        const msg = (sd && sd.message) ? sd.message : (sd && sd.status ? sd.status : 'Processing');
-        if (prog!==null && !isNaN(prog)) setProgress(prog, msg);
-        else setProgress(30, msg);
-
-        if (sd && (sd.status === 'Done' || sd.status === 'done' || sd.status === 'Complete' || sd.status === 'complete')){
-            setProgress(100,'Complete');
-            summaryBadge.className = 'badge pass'; summaryBadge.textContent = 'Complete';
-            lastUpdated.textContent = new Date().toLocaleString();
-            // fetch result
-            setTimeout(async ()=>{
-                const res = sd.result || sd;
-                renderResult(res);
-            }, 500);
-            return true;
-        }
-        if (sd && (sd.status=== 'Error' || sd.status==='error')){ summaryBadge.className='badge fail'; summaryBadge.textContent='Error'; tableContent.textContent = sd.error || 'Processing error'; return true }
-        // update summary
-        summaryBadge.className='badge info'; summaryBadge.textContent = msg || 'Processing';
-        return false;
-    }catch(e){ summaryBadge.className='badge fail'; summaryBadge.textContent='Poll failed'; tableContent.textContent = ''+e; return true }
-}
-
-function highlight(s){ if(!s) return ''; return String(s).replace(/PASS/g,'<span style="color:#7ef3b6;font-weight:800">PASS</span>').replace(/FAIL/g,'<span style="color:#ffb4b4;font-weight:800">FAIL</span>') }
-
-// Escape HTML to safely insert text nodes
-function escapeHtml(unsafe){
-    if(unsafe === null || unsafe === undefined) return '';
-    return String(unsafe)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+function setProgress(p, msg){
+    const pb = document.getElementById('progressBar');
+    const pt = document.getElementById('progressText');
+    if(pb) pb.style.width = Math.max(0, Math.min(100, p||0)) + '%';
+    if(pt) pt.textContent = msg || '';
 }
 
 function renderResult(res){
-    if(!res) return;
-    wsInfo.textContent = res.workspace || 'workspace';
-    // populate static/dynamic panels using compact `ui_left` if available
-    const statBody = staticContent.querySelector('.panel-body');
-    const dynBody = dynamicContent.querySelector('.panel-body');
-    const ui_left = res.ui_left || (res.dynamic_structured && res.dynamic_structured.ui_summary && res.dynamic_structured.ui_summary.ui_left) || null;
-    if(ui_left){
-        const shtml = [];
-        shtml.push('<div style="font-weight:700;margin-bottom:6px">' + escapeHtml(ui_left.static || 'Static: N/A') + '</div>');
-        if(ui_left.static_details && Array.isArray(ui_left.static_details) && ui_left.static_details.length){
-            shtml.push('<ul style="margin:6px 0 0 16px;padding:0;color:var(--muted);font-size:13px">');
-            ui_left.static_details.forEach(it => shtml.push('<li style="margin-bottom:6px">' + escapeHtml(it) + '</li>'));
-            shtml.push('</ul>');
-        } else {
-            shtml.push('<div style="color:var(--muted);font-size:13px">No prominent static issues detected.</div>');
-        }
-        if(statBody){ statBody.innerHTML = shtml.join('\n'); } else { const d = document.createElement('div'); d.className = 'panel-body small'; d.innerHTML = shtml.join('\n'); staticContent.appendChild(d); }
+    // Normalize tests from different producers so UI shows a consistent table.
+    const structuredTests = (res && res.dynamic_structured && Array.isArray(res.dynamic_structured.tests)) ? res.dynamic_structured.tests : [];
+    // generated_tests may be an array or an object with `tests` array
+    const generatedRaw = (res && res.generated_tests) ? (Array.isArray(res.generated_tests) ? res.generated_tests : (res.generated_tests.tests || [])) : [];
 
-        const dhtml = [];
-        dhtml.push('<div style="font-weight:700;margin-bottom:6px">' + escapeHtml(ui_left.dynamic || 'Dynamic: N/A') + '</div>');
-        if(ui_left.dynamic_failures && Array.isArray(ui_left.dynamic_failures) && ui_left.dynamic_failures.length){
-            dhtml.push('<div style="color:#ffb4b4;font-size:13px;margin-top:6px">Failing tests:</div>');
-            dhtml.push('<ul style="margin:6px 0 0 16px;padding:0">');
-            ui_left.dynamic_failures.forEach(it => dhtml.push('<li style="margin-bottom:6px;color:#ffb4b4">' + escapeHtml(it) + '</li>'));
-            dhtml.push('</ul>');
-        } else {
-            dhtml.push('<div style="color:var(--muted);font-size:13px">No failing runtime tests detected.</div>');
+    const normalize = (t, origin) => {
+        // t can have many shapes: {test, status, detail}, {name, result}, or simple strings
+        if(!t) return { name: '', type: '', result: '', duration_ms: '', info: '' };
+        if(typeof t === 'string') return { name: t, type:'', result:'', duration_ms:'', info:'' };
+        const name = t.name || t.test || t.title || t.id || t.titleText || '';
+        const result = t.result || t.status || t.state || '';
+        const duration_ms = t.duration_ms || t.duration || t.time_ms || '';
+        // Heuristics for test type/category
+        let type = t.type || (String(name||'').toLowerCase().includes('equiv') ? 'equivalence' : (t.meta || ''));
+        const lname = String(name||'').toLowerCase();
+        // Prefer detailed output fields, fall back to commands (array or string)
+        let info = '';
+        if(t.detail) info = t.detail;
+        else if(t.info) info = t.info;
+        else if(t.output) info = t.output;
+        else if(t.command) info = (Array.isArray(t.command) ? t.command.join(' ; ') : String(t.command));
+        else if(t.commands) info = (Array.isArray(t.commands) ? t.commands.join(' ; ') : String(t.commands));
+        else info = '';
+        if(!type){
+            if(lname.includes('boundary') || lname.includes('edge') || lname.includes('limit')) type = 'boundary';
+            else if(lname.includes('env') || lname.includes('environment') || lname.includes('readme') || lname.includes('env test')) type = 'environment';
+            else if(lname.includes('resource') || lname.includes('memory') || lname.includes('leak')) type = 'resource';
+            else if(lname.includes('concurrency') || lname.includes('thread') || lname.includes('race')) type = 'concurrency';
+            else if(lname.startsWith('tc-') || lname.startsWith('tc') || lname.includes('test case') || lname.includes('tc-')) type = 'functional';
+            else if(lname.includes('equiv') || lname.includes('equivalence')) type = 'equivalence';
+            else if(lname.startsWith('check_') || lname.startsWith('check') || lname.startsWith('check-')) type = 'check';
+            else if(lname.startsWith('injected_') || lname.includes('injected')) type = 'injected';
+            else type = '';
         }
-        if(dynBody){ dynBody.innerHTML = dhtml.join('\n'); } else { const d2 = document.createElement('div'); d2.className = 'panel-body small'; d2.innerHTML = dhtml.join('\n'); dynamicContent.appendChild(d2); }
-    } else {
-        // fallback: raw outputs
-        if(statBody){ statBody.innerHTML = highlight(res.static || res.static_analysis || 'No static output'); }
-        else { const d = document.createElement('div'); d.className = 'panel-body small'; d.innerHTML = highlight(res.static || res.static_analysis || 'No static output'); staticContent.appendChild(d); }
-
-        if(dynBody){ dynBody.innerHTML = highlight(res.dynamic || res.dynamic_analysis || 'No dynamic output'); }
-        else { const d2 = document.createElement('div'); d2.className = 'panel-body small'; d2.innerHTML = highlight(res.dynamic || res.dynamic_analysis || 'No dynamic output'); dynamicContent.appendChild(d2); }
-    }
-    // Populate White-box and Black-box panels
-    try{
-        const whiteBox = document.getElementById('whiteBox');
-        const blackBox = document.getElementById('blackBox');
-        const wbBody = whiteBox && whiteBox.querySelector('.panel-body');
-        const bbBody = blackBox && blackBox.querySelector('.panel-body');
-        const white = res.white_box || {};
-        const black = res.black_box || {};
-        if(wbBody){
-            let html = '<div style="font-weight:700">' + escapeHtml(white.summary || 'White-box: N/A') + '</div>';
-            if(Array.isArray(white.details) && white.details.length){
-                html += '<ul style="margin:6px 0 0 16px;padding:0;color:var(--muted);font-size:13px">';
-                white.details.forEach(d=> html += '<li style="margin-bottom:6px">'+escapeHtml(d)+'</li>');
-                html += '</ul>';
-            }
-            if(white.usability && (white.usability.suggestions || white.usability.readme_exists!==undefined)){
-                html += '<div style="margin-top:8px;color:var(--muted);font-size:12px">';
-                if(white.usability.readme_exists!==undefined) html += 'README: ' + (white.usability.readme_exists ? 'present' : 'missing') + '<br/>';
-                if(white.usability.suggestions && white.usability.suggestions.length){
-                    html += 'Tips: ' + escapeHtml(white.usability.suggestions.join(' | '));
+        // Infer category: white-box vs black-box. Prefer explicit meta otherwise heuristics.
+        let category = '';
+        if(t.meta && String(t.meta).toLowerCase().includes('white')) category = 'White-box';
+        else if(t.meta && String(t.meta).toLowerCase().includes('black')) category = 'Black-box';
+        else if(String(type).toLowerCase() === 'equivalence' || String(type).toLowerCase() === 'functional' || String(type).toLowerCase() === 'boundary') category = 'Black-box';
+        else if(String(type).toLowerCase() === 'resource' || String(type).toLowerCase() === 'concurrency' || String(type).toLowerCase() === 'environment') category = 'White-box';
+        else category = '';
+        // Further inspect commands to improve category inference
+        try{
+            const cmds = (t && (t.commands || t.command)) || '';
+            const cmdStr = Array.isArray(cmds) ? cmds.join(' ') : String(cmds||'');
+            const lcmd = cmdStr.toLowerCase();
+            if(!category){
+                if(lcmd.includes('test -f') || lcmd.includes('test -n') || lcmd.includes('clangd') || lcmd.includes('qmake') || lcmd.includes('.pro') ){
+                    category = 'White-box';
                 }
-                html += '</div>';
+                if(lcmd.includes('echo') || lcmd.includes('tc-') || lcmd.includes('tc ')){
+                    if(!category) category = 'Black-box';
+                }
             }
-            wbBody.innerHTML = html;
-        }
-        if(bbBody){
-            let html = '<div style="font-weight:700">' + escapeHtml(black.summary || 'Black-box: N/A') + '</div>';
-            if(Array.isArray(black.failures) && black.failures.length){
-                html += '<div style="color:#ffb4b4;margin-top:6px">Failing tests:</div><ul style="margin:6px 0 0 16px;padding:0">';
-                black.failures.forEach(f=> html += '<li style="margin-bottom:6px;color:#ffb4b4">'+escapeHtml(f)+'</li>');
-                html += '</ul>';
+        }catch(e){ }
+        // determine origin label
+        let originLabel = '';
+        try{
+            if(origin === 'dynamic') originLabel = 'Dynamic';
+            else originLabel = 'Generated';
+            // if commands look like static checks, mark as Static
+            const cmds2 = (t && (t.commands || t.command)) || '';
+            const cmdAll = Array.isArray(cmds2) ? cmds2.join(' ') : String(cmds2||'');
+            const lc = cmdAll.toLowerCase();
+            if(lc.includes('qmake') || lc.includes('.pro') || lc.includes('clangd') || lc.includes('test -f') || (String(name||'').toLowerCase().startsWith('check_'))){
+                originLabel = 'Static';
             }
-            if(black.generated_tests_count!==undefined){
-                html += '<div style="margin-top:8px;color:var(--muted);font-size:12px">Generated tests: ' + (black.generated_tests_count||0) + '</div>';
+        }catch(e){ }
+
+        // Ensure every row has a result value. Infer from info when missing, else mark PENDING.
+        let resVal = String(result || '');
+        try{
+            if(!resVal || resVal.trim() === ''){
+                const infoLower = String(info||'').toLowerCase();
+                if(/\b(pass|ok|succeed|success)\b/.test(infoLower)) resVal = 'PASS';
+                else if(/\b(fail|failed|error|exception|crash|exiting with code|not found|missing)\b/.test(infoLower)) resVal = 'FAIL';
+                else if(originLabel === 'Static' && /found\s+\d+\s+c\/?c\+\+\s+error-level/.test(infoLower)) resVal = 'FAIL';
+                else resVal = 'PENDING';
             }
-            bbBody.innerHTML = html;
+        }catch(e){ resVal = resVal || 'PENDING'; }
+
+        return { name: String(name||''), type: String(type||''), category: category, origin: originLabel, result: String(resVal), duration_ms: duration_ms, info: String(info||'') };
+    };
+
+    const all = [];
+    const seen = new Set();
+    structuredTests.forEach(t => {
+        const n = normalize(t, 'dynamic');
+        const key = (n.name||n.info||n.result).toString();
+        if(!seen.has(key)){
+            seen.add(key);
+            all.push(n);
         }
-    }catch(e){ /* non-fatal */ }
-    // Prefer structured UI table if provided by backend
-    try{
-        let ui = res.ui_html || (res.dynamic_structured && res.dynamic_structured.ui_summary && res.dynamic_structured.ui_summary.ui_html);
-        if(ui){
-            tableContent.innerHTML = ui;
-        } else if(res.ui_summary && res.ui_summary.ui_html){
-            tableContent.innerHTML = res.ui_summary.ui_html;
-        } else {
-            tableContent.innerHTML = '<pre class="small">' + escapeHtml(JSON.stringify({static:res.static, dynamic:res.dynamic}, null, 2)) + '</pre>';
+    });
+    generatedRaw.forEach(t => {
+        const n = normalize(t, 'generated');
+        const key = (n.name||n.info||n.result).toString();
+        if(!seen.has(key)){
+            seen.add(key);
+            all.push(n);
         }
-    }catch(e){
-        tableContent.innerHTML = '<pre class="small">' + escapeHtml(JSON.stringify(res, null, 2)) + '</pre>';
+    });
+
+    if(all.length){
+        const hasDuration = all.some(r => r.duration_ms && String(r.duration_ms).trim() !== '');
+        const tbl = document.createElement('table');
+        const h = document.createElement('tr');
+        const headers = ['Name','Type','Result'];
+        if(hasDuration) headers.push('Duration');
+        headers.push('Info');
+        headers.forEach(t => { const th = document.createElement('th'); th.textContent = t; h.appendChild(th); });
+        tbl.appendChild(h);
+        all.forEach(row => {
+            const tr = document.createElement('tr');
+            const name = document.createElement('td'); name.textContent = safeText(row.name||'');
+            const type = document.createElement('td');
+            const originPart = row.origin ? (row.origin + ' / ') : '';
+            const typeText = originPart + (row.type||'') + (row.category ? (' ('+row.category+')') : '');
+            type.textContent = safeText(typeText);
+            const rescol = document.createElement('td'); rescol.textContent = safeText(row.result||'');
+            const cells = [name, type, rescol];
+            if(hasDuration){
+                const dur = document.createElement('td'); dur.textContent = row.duration_ms ? (Number(row.duration_ms)/1000).toFixed(2)+'s' : '';
+                cells.push(dur);
+            }
+            const info = document.createElement('td'); info.textContent = safeText(row.info||'');
+            cells.push(info);
+            cells.forEach(n => tr.appendChild(n));
+            tbl.appendChild(tr);
+        });
+        tableContent.innerHTML = ''; tableContent.appendChild(tbl);
+        // hide white/black boxes if table contains test cases
+        const wb = document.getElementById('whiteBox');
+        const bb = document.getElementById('blackBox');
+        if(wb) wb.style.display = 'none';
+        if(bb) bb.style.display = 'none';
+    } else if(res && res.ui_html){
+        tableContent.innerHTML = '<div class="small">'+(res.ui_html||'')+'<div style="margin-top:8px"><a href="ui_report.html" target="_blank">View full report</a></div></div>';
+    } else {
+        tableContent.textContent = 'No test results available.';
     }
+
+    // Show white/black panels only when we have a processed result but no table rows
+    try{
+        const wb = document.getElementById('whiteBox');
+        const bb = document.getElementById('blackBox');
+        if(res){
+            if(all.length === 0){
+                if(wb) wb.style.display = 'block';
+                if(bb) bb.style.display = 'block';
+            } else {
+                if(wb) wb.style.display = 'none';
+                if(bb) bb.style.display = 'none';
+            }
+        } else {
+            // no result yet: keep them hidden
+            if(wb) wb.style.display = 'none';
+            if(bb) bb.style.display = 'none';
+        }
+    }catch(e){ /* ignore */ }
+
+    // analysis summaries (show full static result if available)
+    try{
+        if(res && res.static_full){
+            staticBody.textContent = res.static_full;
+        } else if(res && (res.static || res.static_summary && res.static_summary.raw)){
+            staticBody.textContent = (res.static || (res.static_summary && res.static_summary.raw));
+        } else {
+            staticBody.textContent = 'No static results.';
+        }
+    }catch(e){ staticBody.textContent = 'No static results.'; }
+    dynamicBody.textContent = (res && (res.dynamic_text||res.dynamic_raw||res.dynamic)) ? ( (res.dynamic_text||res.dynamic_raw||res.dynamic).split('\n').slice(0,300).join('\n') ) : 'No dynamic results.';
+
+    const whiteCount = all.filter(t => (t.category||'').toString().toLowerCase().includes('white')).length;
+    const blackCount = all.filter(t => (t.category||'').toString().toLowerCase().includes('black')).length;
+    whiteBody.textContent = `White-box tests: ${whiteCount}.`;
+    blackBody.textContent = `Black-box tests: ${blackCount}.`;
+
+    lastUpdated.textContent = new Date().toLocaleString();
+
+    // Show a short static summary line above the detailed static output so
+    // users see the error count at a glance while still seeing full details.
+    try{
+        let shortSummary = '';
+        if(res && res.ui_left && res.ui_left.static) shortSummary = res.ui_left.static;
+        else if(res && res.white_box && res.white_box.summary) shortSummary = res.white_box.summary;
+        else if(res && res.static_summary && res.static_summary.raw){
+            // try to extract a concise first-line summary
+            const lines = String(res.static_summary.raw||'').split('\n');
+            shortSummary = lines[0] || '';
+        }
+        const full = res && (res.static_full || res.static || (res.static_summary && res.static_summary.raw)) ? (res.static_full || res.static || (res.static_summary && res.static_summary.raw)) : '';
+        if(shortSummary){
+            staticBody.textContent = shortSummary + '\n\n' + (full || '');
+        } else if(full){
+            staticBody.textContent = full;
+        } else {
+            staticBody.textContent = 'No static results.';
+        }
+    }catch(e){ staticBody.textContent = 'No static results.'; }
+}
+
+async function pollStatus(ws){
+    try{
+        const r = await fetch('/status?ws='+encodeURIComponent(ws));
+        const d = await r.json();
+        // update progress if provided
+        if(d && (typeof d.progress === 'number')){
+            setProgress(d.progress, d.message || d.status || 'Processing');
+        } else if(d && d.status){
+            setProgress(60, d.status);
+        }
+        if(d && (d.status==='Done' || d.status==='done')){ renderResult(d.result||d); setProgress(100, 'Complete'); return true; }
+    }catch(e){ console.error('pollStatus', e); setProgress(0,'Error'); }
+    return false;
 }
 
 uploadBtn.addEventListener('click', async ()=>{
-    if (!fileInput.files.length) return alert('Choose a zip first');
-    uploadBtn.disabled = true; uploadBtn.textContent = 'Uploading...'; setProgress(6,'Uploading');
+    if(!fileInput.files.length) return alert('Choose a zip first');
+    uploadBtn.disabled = true; uploadBtn.textContent = 'Uploading...'; setProgress(10,'Uploading...');
     const fd = new FormData(); fd.append('file', fileInput.files[0]);
     try{
-        const r = await fetch('/upload',{method:'POST',body:fd});
-        const d = await r.json();
-        if (d.status !== 'Accepted' || !d.workspace){ alert('Upload failed: ' + (d.error||JSON.stringify(d))); uploadBtn.disabled=false; uploadBtn.textContent='Upload & Analyze'; setProgress(0,'Idle'); return }
-        const ws = d.workspace; wsInfo.textContent = ws; setProgress(20,'Queued');
-        // poll until done
-        const interval = 1500;
-        const t = setInterval(async ()=>{ const done = await pollStatus(ws); if(done){ clearInterval(t); uploadBtn.disabled=false; uploadBtn.textContent='Upload & Analyze'; } }, interval);
-    }catch(e){ alert('Upload error: '+e); uploadBtn.disabled=false; uploadBtn.textContent='Upload & Analyze'; setProgress(0,'Idle') }
+        const r = await fetch('/upload', { method:'POST', body: fd });
+        const j = await r.json();
+        if(!j || j.status!=='Accepted' || !j.workspace){ alert('Upload failed'); uploadBtn.disabled=false; uploadBtn.textContent='Upload & Analyze'; return; }
+        const ws = j.workspace; setProgress(30,'Queued'); let done=false; const iv = setInterval(async ()=>{ done = await pollStatus(ws); if(done){ clearInterval(iv); uploadBtn.disabled=false; uploadBtn.textContent='Upload & Analyze'; setProgress(100,'Complete'); } }, 1500);
+    }catch(e){ alert('Upload error: '+e); uploadBtn.disabled=false; uploadBtn.textContent='Upload & Analyze'; }
 });
-
-// quick action hooks removed (buttons were removed from UI)
-
 </script>
 </body>
 </html>

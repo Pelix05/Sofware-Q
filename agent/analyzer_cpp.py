@@ -82,6 +82,8 @@ def extract_snippets(report_content):
     if snippets:
         SNIPPET_FILE.write_text("\n\n".join(snippets), encoding="utf-8")
         print(f"[+] C++ snippets saved to {SNIPPET_FILE}")
+    # return number of error-level findings so caller can act on it
+    return len(error_hits)
 
 
 if __name__ == "__main__":
@@ -89,4 +91,8 @@ if __name__ == "__main__":
     report = analyze_cpp(repo_dir=args.repo_dir)
     REPORT_FILE.write_text(report, encoding="utf-8")
     print(f"[+] C++ analysis saved to {REPORT_FILE}")
-    extract_snippets(report)
+    findings = extract_snippets(report)
+    # Exit with non-zero when error-level findings exist so callers (tests) can detect failures
+    if findings and findings > 0:
+        print(f"[!] Exiting with code 2 due to {findings} error-level findings")
+        raise SystemExit(2)
