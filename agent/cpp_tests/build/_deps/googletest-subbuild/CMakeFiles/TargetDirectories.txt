@@ -1,0 +1,3 @@
+D:/semester5/quality/ai-agent-project/agent/cpp_tests/build/_deps/googletest-subbuild/CMakeFiles/googletest-populate.dir
+D:/semester5/quality/ai-agent-project/agent/cpp_tests/build/_deps/googletest-subbuild/CMakeFiles/ALL_BUILD.dir
+D:/semester5/quality/ai-agent-project/agent/cpp_tests/build/_deps/googletest-subbuild/CMakeFiles/ZERO_CHECK.dir

@@ -1,0 +1,6 @@
+MathTests.AddInts 3 0.00438727
+Sanity.TrueIsTrue 3 0.00423717
+gtest_equiv_args 3 0.00559487
+gtest_boundary 2 0.0091184
+gtest_concurrency 2 0.0966903
+---

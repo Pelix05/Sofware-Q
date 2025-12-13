@@ -611,6 +611,39 @@ def upload_file_route():
             except Exception:
                 ui_left['static'] = 'Static: N/A'
 
+            # Expose the full static analysis text into the result so the UI
+            # can show details inline without requiring the user to click
+            # "View full static analysis file". Prefer workspace-local file
+            # if present, otherwise use the captured `static_out`.
+            try:
+                full_static = ''
+                try:
+                    if (ws_path / 'analysis_report_cpp.txt').exists():
+                        full_static = (ws_path / 'analysis_report_cpp.txt').read_text(encoding='utf-8', errors='ignore')
+                    else:
+                        full_static = static_out or ''
+                except Exception:
+                    full_static = static_out or ''
+                result['static_full'] = full_static
+                # Overwrite the legacy `static` field with the full text so
+                # the UI static panel displays details directly.
+                result['static'] = full_static
+                # If we have a generated static analysis test, attach the
+                # full output into its detail field so UI test table shows it.
+                if result.get('generated_tests') and isinstance(result['generated_tests'], list):
+                    for t in result['generated_tests']:
+                        try:
+                            nm = (t.get('name') or t.get('title') or '').lower()
+                            if 'static:analyzer' in nm or 'static analysis' in nm or (t.get('title') and 'static' in t.get('title').lower()):
+                                t['detail'] = full_static
+                                # mark FAIL if analyzer found errors
+                                if full_static and ('Exiting with code' in full_static or 'error-level' in full_static.lower() or 'error' in full_static.lower()):
+                                    t['status'] = 'FAIL'
+                        except Exception:
+                            continue
+            except Exception:
+                pass
+
             try:
                 # Dynamic: prefer structured JSON tests if available
                 dyn_summary = ''

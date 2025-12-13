@@ -199,6 +199,24 @@ def _translate_command_for_windows(cmd: str, exec_cwd: str = None):
         ps = f"if (Select-String -Pattern '{pat}' -Path '{path}' -SimpleMatch -Quiet) {{ Select-String -Pattern '{pat}' -Path '{path}'; exit 0 }} else {{ exit 1 }}"
         return f"powershell -NoProfile -Command \"{ps}\""
 
+    # Translate simple test -f and compound patterns to PowerShell Test-Path/Get-Content
+    # e.g. `test -f file` -> Test-Path
+    m_test = re.match(r"^test\s+-f\s+(\S+)$", s)
+    if m_test:
+        path = m_test.group(1).strip()
+        ps = f"if (Test-Path -LiteralPath '{path}') {{ exit 0 }} else {{ exit 1 }}"
+        return f"powershell -NoProfile -Command \"{ps}\""
+
+    # Compound: test -f FILE && test -n $(cat FILE) -> check exists and non-empty
+    m_comp = re.match(r"^test\s+-f\s+(\S+)\s+&&\s+test\s+-n\s+\$\(cat\s+(\S+)\)", s)
+    if m_comp:
+        p1 = m_comp.group(1).strip()
+        p2 = m_comp.group(2).strip()
+        if p1 == p2:
+            ps = (f"if ((Test-Path -LiteralPath '{p1}') -and ((Get-Content -Raw -LiteralPath '{p1}') -ne '' )) "
+                  "{ exit 0 } else { exit 1 }")
+            return f"powershell -NoProfile -Command \"{ps}\""
+
     # Replace `./release/app.exe` style in the middle of command and run via PowerShell if it's an .exe invocation
     if './' in s and s.strip().endswith('.exe'):
         s2 = s.replace('./', '.\\')
@@ -265,6 +283,73 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
     if not isinstance(jt, list):
         return [{"test": "Generated Tests", "status": "FAIL", "detail": "generated_tests.json is not a JSON array."}]
 
+    # --- Coalesce build commands: detect build-like commands and run them once up-front.
+    build_cmds = []
+
+    # Choose a safe default execution cwd for pre-build steps (used on Windows translation and run_command)
+    try:
+        exec_cwd = str(repo) if repo else None
+    except Exception:
+        exec_cwd = None
+    def is_build_cmd(c: str):
+        try:
+            s = str(c)
+        except Exception:
+            return False
+        s_low = s.lower()
+        # heuristics: qmake, make, mingw32-make, cmake --build, ninja, msbuild
+        if 'qmake' in s_low:
+            return True
+        if 'mingw32-make' in s_low or re.search(r'\bmake\b', s_low) and 'cmake --build' not in s_low:
+            return True
+        if 'cmake --build' in s_low or (s_low.strip().startswith('cmake') and '--build' in s_low):
+            return True
+        if 'ninja' in s_low:
+            return True
+        if 'msbuild' in s_low:
+            return True
+        # Common qmake-style combined commands 'qmake && mingw32-make'
+        if '&&' in s_low and ('qmake' in s_low or 'make' in s_low or 'mingw32-make' in s_low):
+            return True
+        return False
+
+    # collect unique build commands preserving order
+    for t in jt:
+        cmds_t = t.get('commands') or t.get('command') or []
+        if isinstance(cmds_t, str):
+            cmds_t = [cmds_t]
+        for c in cmds_t:
+            try:
+                cs = str(c).strip()
+            except Exception:
+                continue
+            if not cs:
+                continue
+            if is_build_cmd(cs) and cs not in build_cmds:
+                build_cmds.append(cs)
+
+    # run each unique build command once (if any)
+    build_results = {}
+    prebuild_outputs = []
+    if build_cmds:
+        for bc in build_cmds:
+            run_bc = bc
+            try:
+                if os.name == 'nt':
+                    run_bc = _translate_command_for_windows(bc, exec_cwd)
+            except Exception:
+                run_bc = bc
+            ok, out = run_command(run_bc, cwd=exec_cwd)
+            build_results[bc] = (ok, out)
+            prebuild_outputs.append(f"$ {bc}\n{out}")
+
+    # If we executed builds, include that output at the top of the first test detail
+    if prebuild_outputs:
+        prebuild_summary = "\n---\n".join(prebuild_outputs)
+    else:
+        prebuild_summary = ''
+
+    # Now iterate tests (skipping or removing build steps we've already executed)
     for t in jt:
         name = t.get('name') or t.get('title') or t.get('test') or 'Generated Test'
         cmds = t.get('commands') or t.get('command') or []
@@ -286,6 +371,9 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
             continue
 
         combined_output = []
+        # If we ran pre-builds, include their output at the top of this test's detail
+        if prebuild_summary:
+            combined_output.append(prebuild_summary)
         overall_ok = True
         # Choose execution cwd: prefer the folder that contains build/project files
         # (e.g. a .pro file for qmake or a CMakeLists.txt). If a built executable
@@ -321,7 +409,31 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
                 exec_cwd = None
         except Exception:
             exec_cwd = str(repo) if repo else None
-        for cmd in cmds:
+        # Remove build commands that we already ran up-front
+        filtered_cmds = []
+        removed_builds = []
+        for c in cmds:
+            try:
+                cs = str(c).strip()
+            except Exception:
+                cs = ''
+            if cs and is_build_cmd(cs) and cs in build_results:
+                removed_builds.append(cs)
+            else:
+                filtered_cmds.append(c)
+
+        # If this test only contained build commands we already executed, record a SKIPPED/FAIL accordingly
+        if not filtered_cmds:
+            if removed_builds:
+                # if any of the build runs failed, mark this test as FAIL
+                any_fail = any(not build_results.get(bc, (True, ''))[0] for bc in removed_builds)
+                detail = prebuild_summary or ('Build steps executed earlier: ' + ','.join(removed_builds))
+                status = 'FAIL' if any_fail else 'SKIPPED'
+                results.append({"test": name, "status": status, "detail": detail})
+                continue
+            # otherwise fallthrough
+
+        for cmd in filtered_cmds:
             # Skip commands that are comments (start with '#') or empty
             try:
                 cmd_text = str(cmd)
@@ -723,21 +835,87 @@ def run_cpp_unit_tests(search_dirs):
     """
     results = []
     try:
+        # First, attempt to build common build systems (CMake/qmake) so unit tests
+        # that are part of the build are produced reliably. For each candidate
+        # search dir, if a CMakeLists.txt or .pro exists, attempt to configure+build.
+        built_any = False
+        for d in search_dirs:
+            try:
+                bd = Path(d)
+                if not bd.exists():
+                    continue
+                # If a CMakeLists.txt is present, run a configure+build pass
+                if (bd / 'CMakeLists.txt').exists():
+                    try:
+                        ok, out = try_cmake_build(bd)
+                        results.append({'test': f'cmake_build:{bd}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                        if ok:
+                            built_any = True
+                    except Exception as e:
+                        results.append({'test': f'cmake_build:{bd}', 'status': 'FAIL', 'detail': str(e)})
+                # If qmake project present, attempt qmake build which may produce tests
+                elif any((bd / p).exists() for p in bd.glob('*.pro')):
+                    try:
+                        ok, out = try_qmake_build(bd)
+                        results.append({'test': f'qmake_build:{bd}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                        if ok:
+                            built_any = True
+                    except Exception as e:
+                        results.append({'test': f'qmake_build:{bd}', 'status': 'FAIL', 'detail': str(e)})
+            except Exception:
+                continue
+
         # Prefer running ctest if available and useful
         ctest_path = shutil.which('ctest') or shutil.which('ctest.exe')
         if ctest_path:
-            # Try to find a build dir that contains CTestTestfile.cmake
+            # Try to find a build dir that contains CTestTestfile.cmake or Testing/ folder
             for d in search_dirs:
                 try:
                     bd = Path(d)
                     if not bd.exists():
                         continue
+                    # if this dir is a source dir, prefer its build subdir
+                    candidate_build = bd
                     if (bd / 'CTestTestfile.cmake').exists() or (bd / 'Testing').exists():
-                        ok, out = run_command('ctest --output-on-failure', cwd=str(bd))
-                        results.append({'test': 'ctest', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                        candidate_build = bd
+                    elif (bd / 'build' / 'CTestTestfile.cmake').exists() or (bd / 'build' / 'Testing').exists():
+                        candidate_build = bd / 'build'
+                    # If we built using try_cmake_build above, prefer bd/build
+                    if (candidate_build / 'CTestTestfile.cmake').exists() or (candidate_build / 'Testing').exists():
+                        # Ensure we build ALL_BUILD target first to produce tests when generators like VS/MSBuild are used
+                        try:
+                            build_cmd = f'cmake --build "{str(candidate_build)}" --target ALL_BUILD -- -j 1'
+                            # perform a best-effort build of ALL_BUILD (may be no-op)
+                            run_command(build_cmd, cwd=str(candidate_build))
+                        except Exception:
+                            pass
+                        ok, out = run_command('ctest --output-on-failure', cwd=str(candidate_build))
+                        results.append({'test': f'ctest:{candidate_build}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                        # After running ctest, return collected results (unit tests produced)
                         return results
                 except Exception:
                     continue
+
+        # If we didn't find or run any ctest tests, try to inject a GoogleTest
+        # scaffold so the workspace gets white-box unit tests executed.
+        try:
+            injected = ensure_injected_googletest(Path(search_dirs[0]) if search_dirs else Path.cwd(), out_dir=None)
+            if injected:
+                # attempt to configure+build the injected tests and run ctest in that dir
+                try:
+                    okc, outc = try_cmake_build(injected)
+                    results.append({'test': f'injected_cmake_build:{injected}', 'status': 'PASS' if okc else 'FAIL', 'detail': outc})
+                    if okc:
+                        # run ctest in injected build
+                        inj_build = injected / 'build'
+                        if inj_build.exists():
+                            ok, out = run_command('ctest --output-on-failure', cwd=str(inj_build))
+                            results.append({'test': f'injected_ctest:{inj_build}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                            return results
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
         # Fallback: find test executables
         seen = set()
@@ -776,6 +954,74 @@ def run_cpp_unit_tests(search_dirs):
         return results
     except Exception as e:
         return [{'test': 'cpp_unit_discovery', 'status': 'FAIL', 'detail': str(e)}]
+
+
+def ensure_injected_googletest(repo: Path, out_dir: Path = None) -> Path:
+    """Ensure a GoogleTest scaffold is available inside the workspace.
+
+    If the workspace does not contain unit tests, this function copies the
+    agent's `cpp_tests` scaffold into `repo/injected_whitebox_tests` (or into
+    `out_dir` if provided) and returns the path to that scaffold. The copy is
+    non-destructive to the original workspace sources and is marked "injected"
+    in test reports.
+    """
+    try:
+        agent_dir = Path(__file__).resolve().parent
+        scaffold_src = agent_dir / 'cpp_tests'
+        if not scaffold_src.exists():
+            return None
+        target_base = Path(out_dir) if out_dir else Path(repo)
+        injected_dir = target_base / 'injected_whitebox_tests'
+        # If already present, reuse it
+        if injected_dir.exists():
+            return injected_dir
+        # Create injected dir and copy scaffold contents without any previously
+        # generated build artifacts (avoid copying 'build' cache from agent dir).
+        injected_dir.mkdir(parents=True, exist_ok=True)
+        for item in scaffold_src.iterdir():
+            name = item.name
+            # Skip previous build artifacts and large generated files
+            if name.lower() in ('build', 'test_run_output.txt'):
+                continue
+            dest = injected_dir / name
+            if item.is_dir():
+                shutil.copytree(item, dest, dirs_exist_ok=True, ignore=shutil.ignore_patterns('build', '*.o', '*.obj', '*.pdb'))
+            else:
+                shutil.copy2(item, dest)
+        # Write a marker file so reports can show this was injected
+        try:
+            (injected_dir / 'INJECTED_BY_AGENT').write_text('injected tests: google test scaffold', encoding='utf-8')
+        except Exception:
+            pass
+        return injected_dir
+    except Exception:
+        return None
+
+
+def try_run_injected_tests(repo: Path, results: list, out_dir: Path = None) -> bool:
+    """Attempt to inject and run the GoogleTest scaffold in the workspace.
+
+    Appends results to the provided results list. Returns True if an
+    injected scaffold was present or attempted (even if build failed),
+    otherwise False.
+    """
+    try:
+        injected = ensure_injected_googletest(repo, out_dir=out_dir)
+        if not injected:
+            return False
+        try:
+            okc, outc = try_cmake_build(injected)
+            results.append({'test': f'injected_cmake_build:{injected}', 'status': 'PASS' if okc else 'FAIL', 'detail': outc})
+            if okc:
+                inj_build = injected / 'build'
+                if inj_build.exists():
+                    ok, out = run_command('ctest --output-on-failure', cwd=str(inj_build))
+                    results.append({'test': f'injected_ctest:{inj_build}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+        except Exception as e:
+            results.append({'test': 'injected_tests', 'status': 'FAIL', 'detail': str(e)})
+        return True
+    except Exception:
+        return False
 
 # === PATCH HANDLER ===
 def apply_patches_from_dir(target_repo, patch_dir):
@@ -843,6 +1089,7 @@ def run_cpp_tests():
         if behavior == 'skip':
             results.append({"test": "C++ compile", "status": "SKIPPED", "detail": "Skipped by configuration (CPP_QT_BEHAVIOR=skip)."})
             results.append({"test": "C++ runtime", "status": "SKIPPED", "detail": "Skipped runtime tests by configuration."})
+            try_run_injected_tests(CPP_REPO, results, out_dir=None)
             return results
         contains_qt = False
         # check for .pro files at repo root
@@ -863,12 +1110,15 @@ def run_cpp_tests():
         if contains_qt and behavior != 'force':
             results.append({"test": "C++ compile", "status": "SKIPPED", "detail": "Skipped: Qt headers required (missing Qt development packages in runner)."})
             results.append({"test": "C++ runtime", "status": "SKIPPED", "detail": "Skipped runtime tests because Qt is not available in the test environment."})
+            try_run_injected_tests(CPP_REPO, results, out_dir=None)
             return results
     except Exception:
         # If detection fails, proceed with normal compile attempt
         pass
     if not cpp_files:
         results.append({"test": "C++ compile/run", "status": "FAIL", "detail": "No C++ files found"})
+        # If no C++ sources are present, still attempt to run injected whitebox tests
+        try_run_injected_tests(CPP_REPO, results, out_dir=None)
         return results
     exe_name = "main.exe" if os.name == "nt" else "main"
 
@@ -878,22 +1128,25 @@ def run_cpp_tests():
     # Auto-skip builds when host compiler lacks C++17 support to avoid noisy failures
     try:
         ok_cxx17, cxx17_msg = supports_cxx17()
+        skip_repo_build = False
         if not ok_cxx17:
+            # Record that compilation of the repository sources was skipped due to missing C++17
             results.append({"test": "C++ compile", "status": "SKIPPED", "detail": f"Skipped: host compiler lacks C++17 support. {cxx17_msg}."})
             results.append({"test": "C++ runtime", "status": "SKIPPED", "detail": "Skipped runtime tests because host compiler does not support C++17."})
-            return results
+            # do not return here; continue to attempt unit test discovery and injected tests
+            skip_repo_build = True
     except Exception:
         # If detection fails for any reason, proceed with normal build attempt
         pass
     try:
         # prefer .pro/qmake (search recursively; projects may place .pro in subfolders)
         pro_files = list(CPP_REPO.rglob("*.pro"))
-        if pro_files:
+        if pro_files and not skip_repo_build:
             ok, out = try_qmake_build(CPP_REPO)
             if ok:
                 built_exe = out if isinstance(out, str) and out.endswith('.exe') else _find_executable(CPP_REPO)
         # if not built by qmake, try cmake
-        if not built_exe:
+        if not built_exe and not skip_repo_build:
             cmake_file = CPP_REPO / "CMakeLists.txt"
             if cmake_file.exists():
                 ok, out = try_cmake_build(CPP_REPO)
@@ -1596,17 +1849,39 @@ def main():
                 lines = [ln.strip() for ln in log_txt.splitlines() if ln.strip()]
                 current_step = None
                 for ln in lines:
+                    # Old format: STEP: <name> followed by PASS:/FAIL:/WARN:
                     if ln.startswith("STEP:"):
                         current_step = ln.replace("STEP:", "", 1).strip()
-                    elif ln.startswith(("PASS:", "WARN:", "FAIL:")) and current_step:
-                        step_status_token = ln.split(":")[0]
-                        step_status = "PASS" if step_status_token == "PASS" else ("FAIL" if step_status_token == "FAIL" else "SKIPPED")
+                        continue
+                    # Newer/other AHK formats: TC-1.1: Name  then a line like '? PASS' or 'PASS'
+                    m_tc = re.match(r'^(TC-[\d\.]+):\s*(.+)$', ln)
+                    if m_tc:
+                        current_step = f"{m_tc.group(1)}: {m_tc.group(2)}"
+                        continue
+
+                    # Match lines that indicate status markers like '? PASS', 'PASS', 'FAIL', 'WARN'
+                    m_q = re.match(r'^\?\s*(PASS|FAIL|WARN)\b', ln, flags=re.IGNORECASE)
+                    if m_q and current_step:
+                        token = m_q.group(1).upper()
+                        step_status = 'PASS' if token == 'PASS' else ('FAIL' if token == 'FAIL' else 'SKIPPED')
                         post_tests.append({
                             "test": f"GUI step: {current_step}",
                             "status": step_status,
                             "detail": ln
                         })
                         current_step = None
+                        continue
+
+                    # Also accept lines that are exactly 'PASS'/'FAIL' or start with 'PASS:' etc.
+                    if current_step:
+                        if ln.upper().startswith('PASS'):
+                            post_tests.append({"test": f"GUI step: {current_step}", "status": "PASS", "detail": ln})
+                            current_step = None
+                            continue
+                        if ln.upper().startswith('FAIL'):
+                            post_tests.append({"test": f"GUI step: {current_step}", "status": "FAIL", "detail": ln})
+                            current_step = None
+                            continue
             except Exception:
                 pass
         except Exception as _e:
@@ -1732,13 +2007,12 @@ def main():
             'pytest_suite': 'Runs Python unit tests with pytest if present.',
         }
 
-        # Normalize tests into rows and attach descriptions
+        # Normalize tests into rows and attach descriptions, plus ID/Input/Expected
         rows = []
-        for t in tests:
-            name = str(t.get('test', '')).strip()
-            status = str(t.get('status', '')).upper()
+        for idx, t in enumerate(tests, start=1):
+            name = str(t.get('test', '')).strip() or f'Test-{idx}'
+            status = str(t.get('status', '')).upper() or 'SKIPPED'
             detail = str(t.get('detail', '') or '').strip()
-            # Map description by exact name or prefix
             desc = TEST_DESCRIPTIONS.get(name)
             if not desc:
                 for k, v in TEST_DESCRIPTIONS.items():
@@ -1747,14 +2021,65 @@ def main():
                         break
             if not desc:
                 desc = 'Automatic or workspace-provided test. See details for commands and output.'
-            rows.append({'test': name, 'status': status, 'detail': detail, 'description': desc})
+
+            # ID: prefer explicit id field, otherwise use TC-<number>
+            tid = t.get('id') or t.get('name') or f'TC-{idx:03d}'
+
+            # Input: prefer commands/command for generated tests, else a short excerpt of detail
+            inp = ''
+            if 'commands' in t and t.get('commands'):
+                try:
+                    if isinstance(t.get('commands'), list):
+                        inp = ' || '.join(str(x) for x in t.get('commands'))
+                    else:
+                        inp = str(t.get('commands'))
+                except Exception:
+                    inp = str(t.get('commands'))
+            elif 'command' in t and t.get('command'):
+                inp = str(t.get('command'))
+            else:
+                # fallback: use first non-empty line from detail
+                inp = (detail.splitlines()[0] if detail else '')
+
+            # Expected: prefer 'expected' field if present, otherwise a short normalized expectation
+            expected = ''
+            if 'expected' in t and t.get('expected') not in (None, ''):
+                try:
+                    expected = t.get('expected') if isinstance(t.get('expected'), str) else str(t.get('expected'))
+                except Exception:
+                    expected = str(t.get('expected'))
+            else:
+                # derive an expectation from status or description when not explicitly provided
+                if name.lower().startswith('equiv') or name.lower().startswith('tc-') or 'Generated Tests' in name:
+                    expected = 'Process completes without errors (no crash)'
+                else:
+                    expected = desc
+
+            # Ensure no empty cells: replace empty strings with 'N/A'
+            def norm(v):
+                try:
+                    s = str(v).strip()
+                    return s if s else 'N/A'
+                except Exception:
+                    return 'N/A'
+
+            row = {
+                'id': norm(tid),
+                'test': norm(name),
+                'input': norm(inp),
+                'expected': norm(expected),
+                'status': norm(status),
+                'detail': norm(detail),
+                'description': norm(desc)
+            }
+            rows.append(row)
 
         pass_count = sum(1 for r in rows if r['status'] == 'PASS')
         fail_count = sum(1 for r in rows if r['status'] == 'FAIL')
         skip_count = sum(1 for r in rows if r['status'] == 'SKIPPED')
         summary_text = f"Summary: {pass_count} PASS, {fail_count} FAIL, {skip_count} SKIPPED"
 
-        # Attempt to include static analysis summary if present
+        # Attempt to include static analysis summary if present (unchanged)
         static_summary = ''
         try:
             possible_static = Path(struct.get('repo', '')).parent / 'analysis_report_cpp.txt'
@@ -1762,7 +2087,6 @@ def main():
                 possible_static = Path(__file__).resolve().parent.parent / 'analysis_report_cpp.txt'
             if possible_static.exists():
                 txt = possible_static.read_text(encoding='utf-8', errors='ignore')
-                # Extract first lines and any "Found X" pattern
                 m = re.search(r'Found\s+(\d+)\s+C/C\+\+\s+error-level issues', txt)
                 if m:
                     static_summary = f"Static C/C++ issues: {m.group(1)} error-level issues."
@@ -1771,7 +2095,7 @@ def main():
         except Exception:
             static_summary = ''
 
-        # Build an HTML report with a short "What we tested" section and a results table
+        # Build an HTML report with ID/Input/Expected columns
         css = '''<style>
         body {font-family: Arial, Helvetica, sans-serif;}
         .summary {margin-bottom: 1em}
@@ -1782,8 +2106,8 @@ def main():
         tr.pass {background-color: #e6ffed}
         tr.fail {background-color: #ffecec}
         tr.skip {background-color: #fff7e6}
-        td.detail {max-width: 60ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}
-        td.test {max-width: 40ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}
+        td.detail {max-width: 40ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}
+        td.test {max-width: 20ch; white-space: normal; word-break: break-word; overflow-wrap: anywhere}
         .badge {font-weight: bold; padding: 2px 6px; border-radius: 4px}
         .badge.pass {color: #006400}
         .badge.fail {color: #8b0000}
@@ -1791,29 +2115,32 @@ def main():
         </style>'''
 
         import html as _html
-        html = [css, f'<h2>Dynamic Analysis Report</h2>', f'<div class="summary"><strong>{_html.escape(summary_text)}</strong></div>']
+        html_out = [css, f'<h2>Dynamic Analysis Report</h2>', f'<div class="summary"><strong>{_html.escape(summary_text)}</strong></div>']
         if static_summary:
-            html.append(f'<div class="summary"><strong>Static analysis:</strong> {_html.escape(static_summary)}</div>')
+            html_out.append(f'<div class="summary"><strong>Static analysis:</strong> {_html.escape(static_summary)}</div>')
 
-        # What we tested
-        html.append('<div class="what"><h3>What we tested</h3><ul>')
+        # What we tested (use description)
+        html_out.append('<div class="what"><h3>What we tested</h3><ul>')
         seen = set()
         for r in rows:
             if r['test'] in seen:
                 continue
             seen.add(r['test'])
-            html.append(f"<li><strong>{_html.escape(r['test'])}</strong>: {_html.escape(r['description'])}</li>")
-        html.append('</ul></div>')
+            html_out.append(f"<li><strong>{_html.escape(r['test'])}</strong>: {_html.escape(r['description'])}</li>")
+        html_out.append('</ul></div>')
 
-        # Results table
-        html.append('<table class="test-report"><thead><tr><th style="width:4%">#</th><th style="width:30%">Test</th><th style="width:10%">Status</th><th style="width:56%">Details</th></tr></thead><tbody>')
+        # Results table with ID, Input, Expected Output, Test, Status, Details
+        html_out.append('<table class="test-report"><thead><tr><th style="width:8%">定义编号</th><th style="width:20%">输入</th><th style="width:20%">预期输出</th><th style="width:20%">测试项</th><th style="width:8%">状态</th><th style="width:24%">详情</th></tr></thead><tbody>')
         for i, r in enumerate(rows, start=1):
             cls = 'pass' if r['status'] == 'PASS' else ('fail' if r['status'] == 'FAIL' else 'skip')
             badge = f'<span class="badge {cls}">{_html.escape(r["status"])}</span>'
-            detail_html = _html.escape(r['detail'])
+            id_html = _html.escape(r['id'])
+            input_html = _html.escape(r['input'])
+            expected_html = _html.escape(r['expected'])
             test_html = _html.escape(r['test'])
-            html.append(f'<tr class="{cls}"><td>{i}</td><td class="test">{test_html}</td><td>{badge}</td><td class="detail">{detail_html}</td></tr>')
-        html.append('</tbody></table>')
+            detail_html = _html.escape(r['detail'])
+            html_out.append(f'<tr class="{cls}"><td>{id_html}</td><td class="input">{input_html}</td><td class="expected">{expected_html}</td><td class="test">{test_html}</td><td>{badge}</td><td class="detail">{detail_html}</td></tr>')
+        html_out.append('</tbody></table>')
 
         # Recommendations (simple heuristics)
         recs = []
@@ -1826,24 +2153,24 @@ def main():
         if not recs:
             recs.append('No immediate recommendations — all automated checks passed or were skipped.')
 
-        html.append('<h3>Recommendations</h3><ul>')
-        for r in recs:
-            html.append(f'<li>{_html.escape(r)}</li>')
-        html.append('</ul>')
+        html_out.append('<h3>Recommendations</h3><ul>')
+        for rr in recs:
+            html_out.append(f'<li>{_html.escape(rr)}</li>')
+        html_out.append('</ul>')
 
-        ui_html = '\n'.join(html)
+        ui_html = '\n'.join(html_out)
 
-        # Also build a compact text summary for quick viewing
+        # Compact text summary
         compact_text_lines = [summary_text]
         if static_summary:
             compact_text_lines.append(static_summary)
         compact_text_lines.append('Top results:')
         for r in rows:
-            compact_text_lines.append(f"- {r['test']}: {r['status']}")
+            compact_text_lines.append(f"- {r['id']} | {r['test']}: {r['status']}")
 
         compact_text = '\n'.join(compact_text_lines)
 
-        # Return both HTML and compact textual summary
+        # Return both HTML and compact textual summary and rows with new fields
         return {'ui_text': compact_text, 'ui_html': ui_html, 'rows': rows}
 
     try:

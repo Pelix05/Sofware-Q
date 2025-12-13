@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\CMakeFiles\728c256dae1f4260ce5467f9ed395b11\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{6509B5F7-D7BE-3220-988C-DCD137A9C151}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
