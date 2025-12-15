@@ -1,0 +1,5 @@
+add_test([=[MathTests.AddInts]=]  D:/semester5/quality/ai-agent-project/agent/cpp_tests/build/Release/test_example.exe [==[--gtest_filter=MathTests.AddInts]==] --gtest_also_run_disabled_tests)
+set_tests_properties([=[MathTests.AddInts]=]  PROPERTIES WORKING_DIRECTORY D:/semester5/quality/ai-agent-project/agent/cpp_tests/build SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
+add_test([=[Sanity.TrueIsTrue]=]  D:/semester5/quality/ai-agent-project/agent/cpp_tests/build/Release/test_example.exe [==[--gtest_filter=Sanity.TrueIsTrue]==] --gtest_also_run_disabled_tests)
+set_tests_properties([=[Sanity.TrueIsTrue]=]  PROPERTIES WORKING_DIRECTORY D:/semester5/quality/ai-agent-project/agent/cpp_tests/build SKIP_REGULAR_EXPRESSION [==[\[  SKIPPED \]]==])
+set(  test_example_TESTS MathTests.AddInts Sanity.TrueIsTrue)

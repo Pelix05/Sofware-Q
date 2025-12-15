@@ -1,0 +1,5 @@
+if(EXISTS "D:/semester5/quality/ai-agent-project/cpp_project/puzzle-2/injected_whitebox_tests/build/test_example[1]_tests.cmake")
+  include("D:/semester5/quality/ai-agent-project/cpp_project/puzzle-2/injected_whitebox_tests/build/test_example[1]_tests.cmake")
+else()
+  add_test(test_example_NOT_BUILT test_example_NOT_BUILT)
+endif()

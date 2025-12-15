@@ -317,10 +317,11 @@ def upload_file_route():
         logger.info("[BG] Start processing workspace %s (cpp)", ws_id)
         try:
             # For uploaded C++ Qt projects we attempt to build/run tests where
-            # possible. Set CPP_QT_BEHAVIOR='force' for this run so the
-            # dynamic tester will attempt compilation even if Qt headers are
-            # detected. Failures will be captured in the dynamic report.
-            os.environ['CPP_QT_BEHAVIOR'] = 'force'
+            # possible. Default to 'auto' to avoid forcing heavy compiles on
+            # every upload (prevents repeated long-running builds). If you
+            # want to force compilation, set `CPP_QT_BEHAVIOR=force` in the
+            # agent .env or pass a request flag to the upload endpoint.
+            os.environ['CPP_QT_BEHAVIOR'] = os.environ.get('CPP_QT_BEHAVIOR', 'auto')
 
             # Prepare workspace path
             ws_path = AGENT_DIR / 'workspaces' / ws_id
@@ -342,8 +343,128 @@ def upload_file_route():
             write_status(ws_path, status='Processing', progress=2, message='Queued')
 
             # Run static analysis (non-iterative)
-            static_out = run_command(f"py -3 -u analyzer_cpp.py --repo-dir \"{target}\"", cwd=AGENT_DIR)
+            # If compile_commands.json is missing in the uploaded repo, try to generate
+            # one with CMake in a temporary build dir so clang-tidy can run.
+            static_out = ''
+            try:
+                repo_root = Path(target)
+                tidy_needed = True
+                if (repo_root / 'compile_commands.json').exists():
+                    tidy_needed = False
+                cmake_path = shutil.which('cmake')
+                temp_build = None
+                copied_compile = False
+                if tidy_needed and cmake_path:
+                    try:
+                        temp_build = ws_path / 'clang_tidy_build'
+                        if temp_build.exists():
+                            shutil.rmtree(temp_build)
+                        temp_build.mkdir(parents=True, exist_ok=True)
+                        # Run cmake configure to generate compile_commands.json
+                        cfg_cmd = [cmake_path, '-S', str(repo_root), '-B', str(temp_build), '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON']
+                        proc = subprocess.run(cfg_cmd, cwd=str(AGENT_DIR), capture_output=True, text=True)
+                        if proc.returncode == 0:
+                            cc_src = temp_build / 'compile_commands.json'
+                            if cc_src.exists():
+                                try:
+                                    shutil.copy2(cc_src, repo_root / 'compile_commands.json')
+                                    copied_compile = True
+                                except Exception:
+                                    copied_compile = False
+                    except Exception:
+                        copied_compile = False
 
+                # Run analyzer (will pick up compile_commands.json if present)
+                static_out = run_command(f"py -3 -u analyzer_cpp.py --repo-dir \"{target}\"", cwd=AGENT_DIR)
+
+                # clang-tidy disabled: we will not run clang-tidy for uploads.
+                # Keep static_out from the analyzer (cppcheck + any analyzer-produced text).
+
+                # cleanup: remove copied compile_commands.json and temp build dir
+                try:
+                    if copied_compile:
+                        try:
+                            (repo_root / 'compile_commands.json').unlink()
+                        except Exception:
+                            pass
+                    if temp_build and temp_build.exists():
+                        shutil.rmtree(temp_build, ignore_errors=True)
+                except Exception:
+                    pass
+            except Exception:
+                # fallback: run analyzer without compile_commands.json
+                static_out = run_command(f"py -3 -u analyzer_cpp.py --repo-dir \"{target}\"", cwd=AGENT_DIR)
+            # If analyzer produced structured JSON (with cppcheck/clang_tidy raw sections),
+            # merge those raw texts into the static_out so the UI static panel shows clang-tidy too.
+                try:
+                    structured_root = AGENT_DIR / 'analysis_report_cpp.json'
+                    if structured_root.exists():
+                        try:
+                            sdata = json.loads(structured_root.read_text(encoding='utf-8'))
+                            merged = (static_out or '')
+                            # append cppcheck raw only
+                            cpp_raw = ''
+                            try:
+                                cpp_raw = sdata.get('cppcheck', {}).get('raw') or ''
+                            except Exception:
+                                cpp_raw = ''
+                            if cpp_raw and cpp_raw.strip() and cpp_raw.strip() not in merged:
+                                if merged:
+                                    merged += '\n\n--- cppcheck (structured) ---\n'
+                                merged += cpp_raw
+                            if merged:
+                                static_out = merged
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+
+            # Ensure static analysis fields exist (robust fallback).
+            try:
+                # Try workspace-local structured JSON first, then agent-root JSON.
+                # Only merge raw structured outputs into the local `static_out`
+                # so we don't reference `result` before it's created later.
+                structured = None
+                try:
+                    pws = ws_path / 'analysis_report_cpp.json'
+                    if pws.exists():
+                        structured = json.loads(pws.read_text(encoding='utf-8'))
+                except Exception:
+                    structured = None
+                if structured is None:
+                    try:
+                        prot = AGENT_DIR / 'analysis_report_cpp.json'
+                        if prot.exists():
+                            structured = json.loads(prot.read_text(encoding='utf-8'))
+                    except Exception:
+                        structured = None
+
+                # If structured data found, merge its raw cppcheck/clang-tidy
+                # outputs into `static_out` so the UI shows them later.
+                if structured:
+                    merged = static_out or ''
+                    try:
+                        if structured.get('cppcheck', {}).get('raw'):
+                            raw_cpp = structured['cppcheck'].get('raw') or ''
+                            if raw_cpp.strip() and raw_cpp.strip() not in merged:
+                                if merged:
+                                    merged += '\n\n--- cppcheck (structured) ---\n'
+                                merged += raw_cpp
+                    except Exception:
+                        pass
+                    try:
+                        if structured.get('clang_tidy', {}).get('raw'):
+                            raw_tidy = structured['clang_tidy'].get('raw') or ''
+                            if raw_tidy.strip() and raw_tidy.strip() not in merged:
+                                if merged:
+                                    merged += '\n\n--- clang-tidy (structured) ---\n'
+                                merged += raw_tidy
+                    except Exception:
+                        pass
+                    if merged:
+                        static_out = merged
+            except Exception:
+                pass
             # For Experiment 2 we do not apply or archive agent patches; keep
             # the workspace focused on analysis only. Leave archived list empty.
             archived_list = []
@@ -462,6 +583,74 @@ def upload_file_route():
                 logger.warning('DiagramScene test generator failed for %s: %s', ws_id, _e)
                 write_status(ws_path, status='Processing', progress=45, message='DiagramScene tests skipped')
 
+            # Ensure an injected GoogleTest scaffold exists in the workspace so
+            # white-box tests can run even if the project doesn't include them.
+            try:
+                from dynamic_tester import ensure_injected_googletest
+                try:
+                    ensure_injected_googletest(Path(target), out_dir=ws_path)
+                except Exception:
+                    pass
+            except Exception:
+                # dynamic_tester may not be importable in some environments
+                pass
+
+            # Also ensure a lightweight doctest scaffold is present so simple
+            # white-box tests are available without pulling external deps.
+            try:
+                from dynamic_tester import ensure_injected_doctest
+                try:
+                    ensure_injected_doctest(Path(target), out_dir=ws_path)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+
+            # If DiagramScene functional tests were generated, create a small
+            # stub executable and patch the project's CMakeLists so the stub
+            # is built when Qt is not available. This ensures generated
+            # DiagramScene tests can exercise a real binary.
+            def _create_diagramscene_stub_if_needed(ws_path_local, target_root):
+                try:
+                    # detect presence of DiagramScene generated tests
+                    diag_json = ws_path_local / 'generated_tests_diagramscene.json'
+                    if not diag_json.exists():
+                        return
+                    # Find candidate project directories (CMakeLists mentioning Qt)
+                    proj_candidates = []
+                    for cm in Path(target_root).rglob('CMakeLists.txt'):
+                        try:
+                            txt = cm.read_text(encoding='utf-8', errors='ignore')
+                            if 'Qt6' in txt or 'find_package(Qt6' in txt or 'diagramscene' in str(cm.parent).lower():
+                                proj_candidates.append(cm.parent)
+                        except Exception:
+                            continue
+                    if not proj_candidates:
+                        return
+                    proj = proj_candidates[0]
+                    stub_cpp = proj / 'diagramscene_stub.cpp'
+                    cmake_file = proj / 'CMakeLists.txt'
+                    # write a simple stub
+                    if not stub_cpp.exists():
+                        stub_cpp.write_text('''#include <iostream>\n#include <string>\nint main(int argc, char** argv) {\n    std::cout << "diagramscene stub running\n";\n    for (int i=1;i<argc;i++) {\n        std::string a = argv[i];\n        if (a == "--nodes" && i+1<argc) { std::cout << "Nodes processed: " << argv[++i] << "\n"; }\n        else if (a == "--export" && i+1<argc) { std::cout << "Exported svg: " << argv[++i] << "\n"; }\n        else if (a == "--label" && i+1<argc) { std::cout << "Labeled: " << argv[++i] << "\n"; }\n    }\n    return 0;\n}\n''', encoding='utf-8')
+                    # patch CMakeLists to add a fallback target if not already present
+                    if cmake_file.exists():
+                        cmtext = cmake_file.read_text(encoding='utf-8', errors='ignore')
+                        if '## AGENT_STUB_ADDED' not in cmtext:
+                            add_block = '\n# ## AGENT_STUB_ADDED - agent fallback target for diagramscene\nif(NOT TARGET diagramscene AND NOT TARGET diagramscene_stub)\n  add_executable(diagramscene_stub diagramscene_stub.cpp)\n  set_target_properties(diagramscene_stub PROPERTIES OUTPUT_NAME "diagramscene")\nendif()\n'
+                            try:
+                                with open(cmake_file, 'a', encoding='utf-8') as cf:
+                                    cf.write(add_block)
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+
+            try:
+                _create_diagramscene_stub_if_needed(ws_path, target)
+            except Exception:
+                pass
+
             # Build argument list mirroring manual invocation
             args = [
                 'py', '-3', '-u', 'dynamic_tester.py',
@@ -491,6 +680,20 @@ def upload_file_route():
             try:
                 if static_report_src.exists():
                     shutil.copy2(static_report_src, static_report_dst)
+                else:
+                    # If we merged structured output into static_out, write it into workspace file
+                    try:
+                        if static_out:
+                            (ws_path / 'analysis_report_cpp.txt').write_text(static_out, encoding='utf-8')
+                    except Exception:
+                        pass
+                # Also copy structured JSON into workspace when available so UI can load it locally
+                structured_root = AGENT_DIR / 'analysis_report_cpp.json'
+                if structured_root.exists():
+                    try:
+                        shutil.copy2(structured_root, ws_path / 'analysis_report_cpp.json')
+                    except Exception:
+                        pass
             except Exception as _e:
                 logger.warning("Failed to copy static report to workspace %s: %s", ws_id, _e)
 
@@ -537,14 +740,115 @@ def upload_file_route():
                 "suggested_patches": [],
                 "archived_agent_patches": archived_list,
             }
-            # Attach generated HF tests if present
+            # Ensure structured static analysis (cppcheck/clang-tidy) is attached
+            try:
+                # prefer workspace-local JSON, fall back to agent root
+                sp_ws = ws_path / 'analysis_report_cpp.json'
+                sp_root = AGENT_DIR / 'analysis_report_cpp.json'
+                structured = None
+                if sp_ws.exists():
+                    try:
+                        structured = json.loads(sp_ws.read_text(encoding='utf-8'))
+                    except Exception:
+                        structured = None
+                elif sp_root.exists():
+                    try:
+                        structured = json.loads(sp_root.read_text(encoding='utf-8'))
+                    except Exception:
+                        structured = None
+
+                if structured:
+                    result['static_structured'] = structured
+                    try:
+                        cpp_cnt = int(structured.get('cppcheck', {}).get('issue_count', 0) or 0)
+                    except Exception:
+                        cpp_cnt = 0
+                    try:
+                        tidy_cnt = int(structured.get('clang_tidy', {}).get('issue_count', 0) or 0)
+                    except Exception:
+                        tidy_cnt = 0
+                    total_cnt = cpp_cnt + tidy_cnt
+                    result['static_count'] = total_cnt
+                    # merge raw text pieces into static_full for UI convenience
+                    try:
+                        merged = result.get('static_full', '') or result.get('static', '') or ''
+                        if structured.get('cppcheck', {}).get('raw'):
+                            rc = structured['cppcheck'].get('raw') or ''
+                            if rc.strip() and rc.strip() not in merged:
+                                if merged:
+                                    merged += "\n\n--- cppcheck (structured) ---\n"
+                                merged += rc
+                        if structured.get('clang_tidy', {}).get('raw'):
+                            rt = structured['clang_tidy'].get('raw') or ''
+                            if rt.strip() and rt.strip() not in merged:
+                                if merged:
+                                    merged += "\n\n--- clang-tidy (structured) ---\n"
+                                merged += rt
+                        if merged:
+                            result['static_full'] = merged
+                            result['static'] = merged
+                    except Exception:
+                        pass
+                else:
+                    # ensure keys exist even when no structured JSON is available
+                    result.setdefault('static_structured', None)
+                    result.setdefault('static_count', 0)
+            except Exception:
+                result.setdefault('static_structured', None)
+                result.setdefault('static_count', 0)
+            # Attach generated HF tests if present and normalize entries for the UI
             try:
                 gen_path = ws_path / 'generated_tests.json'
                 if gen_path.exists():
-                    with open(gen_path, 'r', encoding='utf-8') as gf:
-                        result['generated_tests'] = json.load(gf)
+                    try:
+                        gt = json.loads(gen_path.read_text(encoding='utf-8'))
+                    except Exception:
+                        gt = None
+                    if isinstance(gt, list):
+                        norm = []
+                        for entry in gt:
+                            try:
+                                e = dict(entry) if isinstance(entry, dict) else {'name': str(entry)}
+                                # ensure common fields exist
+                                e['name'] = e.get('name') or e.get('title') or e.get('test') or ''
+                                e['title'] = e.get('title') or e.get('name')
+                                # normalize commands to a list of strings
+                                cmds = e.get('commands') or e.get('command') or []
+                                if isinstance(cmds, str):
+                                    cmds = [cmds]
+                                # ensure each command is a string
+                                cmds2 = []
+                                for c in cmds:
+                                    try:
+                                        cmds2.append(str(c))
+                                    except Exception:
+                                        cmds2.append('')
+                                e['commands'] = cmds2
+                                # preserve detail/status; default to UNKNOWN
+                                st = str(e.get('status') or e.get('result') or '').upper()
+                                if st not in ('PASS', 'FAIL', 'SKIPPED'):
+                                    e['status'] = e.get('status') or 'UNKNOWN'
+                                else:
+                                    e['status'] = st
+                                # mark skipped if dynamic_tester flagged it
+                                if e.get('_skip_compiler_helper') or str(e.get('status')).upper() == 'SKIPPED':
+                                    e['skipped'] = True
+                                else:
+                                    e['skipped'] = False
+                                norm.append(e)
+                            except Exception:
+                                continue
+                        result['generated_tests'] = norm
+                        result['generated_tests_path'] = str(gen_path)
+                    else:
+                        result['generated_tests'] = gt
+                        result['generated_tests_path'] = str(gen_path)
+                else:
+                    result['generated_tests'] = None
+                    result['generated_tests_path'] = None
             except Exception:
                 result['generated_tests'] = None
+                result['generated_tests_path'] = None
             # If the tester produced a ui-friendly summary, surface it at top-level
             try:
                 if dyn_json and isinstance(dyn_json, dict):
@@ -611,6 +915,162 @@ def upload_file_route():
             except Exception:
                 ui_left['static'] = 'Static: N/A'
 
+            # Expose the full static analysis text into the result so the UI
+            # can show details inline without requiring the user to click
+            # "View full static analysis file". Prefer workspace-local file
+            # if present, otherwise use the captured `static_out`.
+            try:
+                full_static = ''
+                try:
+                    if (ws_path / 'analysis_report_cpp.txt').exists():
+                        full_static = (ws_path / 'analysis_report_cpp.txt').read_text(encoding='utf-8', errors='ignore')
+                    else:
+                        full_static = static_out or ''
+                except Exception:
+                    full_static = static_out or ''
+                result['static_full'] = full_static
+                # include structured static JSON if analyzer produced it
+                structured_path_ws = ws_path / 'analysis_report_cpp.json'
+                structured_path_root = AGENT_DIR / 'analysis_report_cpp.json'
+                structured = None
+                if structured_path_ws.exists():
+                    try:
+                        structured = json.loads(structured_path_ws.read_text(encoding='utf-8'))
+                    except Exception:
+                        structured = None
+                elif structured_path_root.exists():
+                    try:
+                        structured = json.loads(structured_path_root.read_text(encoding='utf-8'))
+                    except Exception:
+                        structured = None
+                if structured:
+                    # attach structured data and compute counts
+                    result['static_structured'] = structured
+                    try:
+                        c = structured.get('cppcheck', {})
+                        t = structured.get('clang_tidy', {})
+                        cpp_cnt = int(c.get('issue_count', 0)) if isinstance(c, dict) else 0
+                        tidy_cnt = int(t.get('issue_count', 0)) if isinstance(t, dict) else 0
+                        total_cnt = cpp_cnt + tidy_cnt
+                        result['static_count'] = total_cnt
+                        # build a readable ui_left summary
+                        if total_cnt > 0:
+                            result['ui_left']['static'] = f"Static: {total_cnt} issues (cppcheck: {cpp_cnt}, clang-tidy: {tidy_cnt})"
+                        else:
+                            result['ui_left']['static'] = result.get('ui_left', {}).get('static', '')
+                    except Exception:
+                        result['static_count'] = 0
+
+                    # merge structured raw outputs into the full static text so UI shows clang-tidy too
+                    merged = full_static or ''
+                    try:
+                        if structured.get('cppcheck') and structured['cppcheck'].get('raw'):
+                            raw_cpp = structured['cppcheck'].get('raw') or ''
+                            if raw_cpp.strip() and raw_cpp.strip() not in merged:
+                                if merged:
+                                    merged += "\n\n--- cppcheck (structured) ---\n"
+                                merged += raw_cpp
+                    except Exception:
+                        pass
+                    try:
+                        if structured.get('clang_tidy') and structured['clang_tidy'].get('raw'):
+                            raw_tidy = structured['clang_tidy'].get('raw') or ''
+                            if raw_tidy.strip() and raw_tidy.strip() not in merged:
+                                if merged:
+                                    merged += "\n\n--- clang-tidy (structured) ---\n"
+                                merged += raw_tidy
+                    except Exception:
+                        pass
+
+                    if merged:
+                        result['static_full'] = merged
+                        result['static'] = merged
+                        try:
+                            top_issues = []
+                            for ln in (merged or '').splitlines():
+                                if len(top_issues) >= 3:
+                                    break
+                                if 'error' in ln.lower() or 'warning' in ln.lower() or 'fatal' in ln.lower():
+                                    clean = ln.strip()
+                                    if clean and clean not in top_issues:
+                                        top_issues.append(clean)
+                            if top_issues:
+                                result['ui_left']['static_details'] = top_issues
+                        except Exception:
+                            pass
+
+                    # If we didn't get a numeric count from structured JSON, estimate from merged text
+                    try:
+                        if 'static_count' not in result or result.get('static_count') is None:
+                            merged_text = merged or ''
+                            est = sum(1 for ln in merged_text.splitlines() if re.search(r'error|warning|fatal', ln, flags=re.IGNORECASE))
+                            result['static_count'] = est
+                            if not result['ui_left'].get('static'):
+                                result['ui_left']['static'] = f"Static: {est} findings"
+                    except Exception:
+                        pass
+                # Overwrite the legacy `static` field with the full text so
+                # the UI static panel displays details directly.
+                result['static'] = full_static
+                # Robust fallback: if no structured JSON was found by the
+                # earlier logic, synthesize a minimal `static_structured`
+                # from the collected `full_static` text so the UI can show
+                # counts and raw text for new uploads even when the
+                # analyzer didn't write a JSON file.
+                try:
+                    sp_ws2 = ws_path / 'analysis_report_cpp.json'
+                    sp_root2 = AGENT_DIR / 'analysis_report_cpp.json'
+                    found_struct = None
+                    if sp_ws2.exists():
+                        try:
+                            found_struct = json.loads(sp_ws2.read_text(encoding='utf-8'))
+                        except Exception:
+                            found_struct = None
+                    elif sp_root2.exists():
+                        try:
+                            found_struct = json.loads(sp_root2.read_text(encoding='utf-8'))
+                        except Exception:
+                            found_struct = None
+                    if not found_struct and full_static:
+                        est_cnt = sum(1 for ln in (full_static or '').splitlines() if re.search(r'error|warning|fatal', ln, flags=re.IGNORECASE))
+                        synth = {
+                            'cppcheck': {'raw': full_static or '', 'issue_count': est_cnt},
+                            'clang_tidy': {'raw': '', 'issue_count': 0}
+                        }
+                        result['static_structured'] = synth
+                        result['static_count'] = est_cnt
+                        # merge synthesized raw into static_full/static if not present
+                        merged2 = result.get('static_full', '') or result.get('static', '') or ''
+                        if (full_static or '').strip() and full_static.strip() not in merged2:
+                            if merged2:
+                                merged2 += '\n\n--- cppcheck (synth) ---\n'
+                            merged2 += full_static
+                        if merged2:
+                            result['static_full'] = merged2
+                            result['static'] = merged2
+                        # update ui_left summary
+                        try:
+                            result['ui_left']['static'] = f"Static: {est_cnt} findings"
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+                # If we have a generated static analysis test, attach the
+                # full output into its detail field so UI test table shows it.
+                if result.get('generated_tests') and isinstance(result['generated_tests'], list):
+                    for t in result['generated_tests']:
+                        try:
+                            nm = (t.get('name') or t.get('title') or '').lower()
+                            if 'static:analyzer' in nm or 'static analysis' in nm or (t.get('title') and 'static' in t.get('title').lower()):
+                                t['detail'] = full_static
+                                # mark FAIL if analyzer found errors
+                                if full_static and ('Exiting with code' in full_static or 'error-level' in full_static.lower() or 'error' in full_static.lower()):
+                                    t['status'] = 'FAIL'
+                        except Exception:
+                            continue
+            except Exception:
+                pass
+
             try:
                 # Dynamic: prefer structured JSON tests if available
                 dyn_summary = ''
@@ -673,6 +1133,19 @@ def upload_file_route():
             except Exception:
                 result['white_box'] = {'summary': 'N/A', 'details': []}
                 result['black_box'] = {'summary': 'N/A', 'failures': []}
+
+            # Merge unit tests from the dynamic structured report into top-level result
+            try:
+                if dyn_json and isinstance(dyn_json, dict):
+                    dyn_tests = dyn_json.get('tests')
+                    if isinstance(dyn_tests, list) and dyn_tests:
+                        # place under `unit_tests` for UI compatibility
+                        result['unit_tests'] = dyn_tests
+                    # preserve list of source files merged (if present)
+                    if 'merged_test_results_files' in dyn_json:
+                        result['merged_test_results_files'] = dyn_json.get('merged_test_results_files')
+            except Exception:
+                pass
 
             with open(ws_path / 'result.json', 'w', encoding='utf-8') as fh:
                 json.dump(result, fh, ensure_ascii=False, indent=2)

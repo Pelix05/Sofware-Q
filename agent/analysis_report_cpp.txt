@@ -43,4 +43,3 @@ public slots:
 diagramscene_ultima\findreplacedialog.h:23:9: error: There is an unknown macro here somewhere. Configuration is required. If slots is a macro then please configure it. [unknownMacro]
 private slots:
         ^
-

@@ -1,9 +1,34 @@
 # Dynamic Analysis Report
-Date: 2025-12-07
+Date: 2025-12-15
 
 == TEST EXECUTION ==
-[-] C++ compile/run ... FAIL
- No C++ files found
+[-] test_puzzle_piece_close_enough ... FAIL
+ Traceback (most recent call last):
+   File "D:\semester5\quality\ai-agent-project\agent\dynamic_tester.py", line 1489, in run_py_bug_tests
+     spec.loader.exec_module(mod)
+     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+   File "<frozen importlib._bootstrap_external>", line 1022, in exec_module
+   File "<frozen importlib._bootstrap_external>", line 1159, in get_code
+   File "<frozen importlib._bootstrap_external>", line 1217, in get_data
+ FileNotFoundError: [Errno 2] No such file or directory: 'D:\\semester5\\quality\\ai-agent-project\\puzzle-challenge\\puzzle_piece.py'
+[-] test_labels_render_text ... FAIL
+ Traceback (most recent call last):
+   File "D:\semester5\quality\ai-agent-project\agent\dynamic_tester.py", line 1489, in run_py_bug_tests
+     spec.loader.exec_module(mod)
+     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+   File "<frozen importlib._bootstrap_external>", line 1022, in exec_module
+   File "<frozen importlib._bootstrap_external>", line 1159, in get_code
+   File "<frozen importlib._bootstrap_external>", line 1217, in get_data
+ FileNotFoundError: [Errno 2] No such file or directory: 'D:\\semester5\\quality\\ai-agent-project\\puzzle-challenge\\labels.py'
+[-] test_puzzle_get_event ... FAIL
+ Traceback (most recent call last):
+   File "D:\semester5\quality\ai-agent-project\agent\dynamic_tester.py", line 1489, in run_py_bug_tests
+     spec.loader.exec_module(mod)
+     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+   File "<frozen importlib._bootstrap_external>", line 1022, in exec_module
+   File "<frozen importlib._bootstrap_external>", line 1159, in get_code
+   File "<frozen importlib._bootstrap_external>", line 1217, in get_data
+ FileNotFoundError: [Errno 2] No such file or directory: 'D:\\semester5\\quality\\ai-agent-project\\puzzle-challenge\\puzzle.py'
 [+] Resource Management ... PASS
  Read success: Test
 [+] Concurrency ... PASS
@@ -28,9 +53,55 @@ Date: 2025-12-07
  TEST_MODE set to 1
 [+] Dynamic Code Test ... PASS
  JSON loaded: {'__import__': 'os'}
-[!] Generated Tests ... SKIPPED
- No generated_tests.json found in workspace or output dirs.
+[!] TC-1.1: Rectangle Drawing ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-1.2: Circle Drawing ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-1.3: Diamond Drawing ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-1.4: Arrow Drawing ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-2.1: Element Connection ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-2.2: Auto Alignment ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-2.3: Smart Routing ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-3.1: Element Selection ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-3.2: Element Movement ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-3.3: Element Deletion ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-3.4: Copy/Paste ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-3.5: Undo/Redo ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-4.1: Color Settings ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-4.2: Size Adjustment ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-4.3: Label Editing ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-4.4: Shape Type Conversion ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-5.1: Load Template ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-5.2: Save as Template ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-6.1: Export PNG ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-6.2: Export PDF ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-6.3: Export SVG ... SKIPPED
+ No executable commands (all lines are comments or empty).
+[!] TC-7.1: Import Visio ... SKIPPED
+ No executable commands (all lines are comments or empty).
 [-] GUI smoke (AHK) ... FAIL
- $ powershell -NoProfile -ExecutionPolicy Bypass -Command $ErrorActionPreference='SilentlyContinue'; $env:AHK_EXE_PATH='D:\\flowchart_test\\diagramscene.exe'; $env:AHK_LOG_PATH='D:\新建文件夹\School\project\软件测试实验\Sofware-Q\agent\workspaces\utnubu__source_20251205_175825\ahk_result.txt'; New-Item -ItemType Directory -Force (Split-Path -LiteralPath $env:AHK_LOG_PATH) | Out-Null; New-Item -ItemType File -Force -Path $env:AHK_LOG_PATH | Out-Null; & 'C:\\Program Files\\AutoHotkey\\AutoHotkey.exe' 'D:\\flowchart_test\\diagramscene_autohotkey_smoke.ahk'; $log = Get-Content -LiteralPath $env:AHK_LOG_PATH; Write-Output $log; if ($log -like '*FAIL:*') { exit 1 } elseif ($log -like '*PASS: smoke completed*') { exit 0 } else { exit 1 }
- 'Out-Null' 不是内部或外部命令，也不是可运行的程序
- 或批处理文件。
+ $ powershell -NoProfile -ExecutionPolicy Bypass -File agent\workspaces\manual_run\run_ahk.ps1
+ Windows PowerShell
+ Copyright (C) Microsoft Corporation. All rights reserved.
+ 
+ Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+ 
+ The argument 'agent\workspaces\manual_run\run_ahk.ps1' to the -File parameter does not exist. Provide the path to an existing '.ps1' file as an argument to the -File parameter.

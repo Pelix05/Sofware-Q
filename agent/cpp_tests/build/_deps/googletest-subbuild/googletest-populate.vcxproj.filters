@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\1f010068cc07596ac1d49e0ac58dcf66\googletest-populate-mkdir.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\1f010068cc07596ac1d49e0ac58dcf66\googletest-populate-download.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\1f010068cc07596ac1d49e0ac58dcf66\googletest-populate-update.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\1f010068cc07596ac1d49e0ac58dcf66\googletest-populate-patch.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\1f010068cc07596ac1d49e0ac58dcf66\googletest-populate-configure.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\1f010068cc07596ac1d49e0ac58dcf66\googletest-populate-build.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\1f010068cc07596ac1d49e0ac58dcf66\googletest-populate-install.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\1f010068cc07596ac1d49e0ac58dcf66\googletest-populate-test.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\6e53d8c24449578f430985652a266615\googletest-populate-complete.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\47c7e0d588a8e25e4982e7abac21a95a\googletest-populate.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="D:\semester5\quality\ai-agent-project\agent\cpp_tests\build\_deps\googletest-subbuild\CMakeFiles\googletest-populate" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{467416E9-43F0-3EED-8080-76C6E64DE941}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
