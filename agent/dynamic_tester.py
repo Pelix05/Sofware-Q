@@ -15,6 +15,7 @@ import platform
 import subprocess
 import shutil
 import ast
+import shlex
 
 # === Paths ===
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,6 +28,20 @@ PUZZLE_CHALLENGE = PY_REPO / "puzzle-challenge"
 
 # Global flag to control sanitizer-enabled builds (can be toggled from CLI)
 USE_SANITIZERS = False
+
+# Global cache of executed build commands/paths to avoid repeated builds during a single run
+EXECUTED_BUILD_CMDS = set()
+EXECUTED_BUILD_DIRS = set()
+
+def _normalize_build_cmd_str_global(cmd: str):
+    try:
+        s = str(cmd).lower().strip()
+        s = re.sub(r"\s+-j\d+\b", ' ', s)
+        s = re.sub(r"\s+--jobs=\d+\b", ' ', s)
+        s = re.sub(r'\s+', ' ', s).strip()
+        return s
+    except Exception:
+        return str(cmd).strip()
 
 
 def parse_args():
@@ -51,6 +66,11 @@ def parse_args():
 def run_command(cmd, cwd=None, input_text=None):
     """Run shell command with optional stdin and return success + output."""
     try:
+        # On Windows, avoid creating new console windows for subprocesses
+        creationflags = 0
+        if os.name == 'nt' and hasattr(subprocess, 'CREATE_NO_WINDOW'):
+            creationflags = subprocess.CREATE_NO_WINDOW
+
         result = subprocess.run(
             cmd,
             shell=isinstance(cmd, str),
@@ -60,6 +80,7 @@ def run_command(cmd, cwd=None, input_text=None):
             errors='replace',
             cwd=cwd,
             capture_output=True,
+            creationflags=creationflags,
         )
         return result.returncode == 0, result.stdout + result.stderr
     except Exception as e:
@@ -121,11 +142,20 @@ def _find_executable(root: Path):
     """Search for a likely executable produced by a build in the repo or build dirs."""
     exes = list(root.rglob("*.exe"))
     if exes:
-        # prefer main.exe or first top-level exe
+        # filter out known CMake/compiler helper artifacts
+        filtered = [e for e in exes if 'cmakefiles' not in str(e).lower() and 'compilerid' not in str(e).lower() and e.name.lower() not in ('a.exe', 'compileridcxx.exe')]
+        # prefer common app names
+        for e in filtered:
+            if e.name.lower() in ("main.exe", "app.exe", "debug.exe"):
+                return str(e)
+        if filtered:
+            # prefer executables that are not deeply nested under CMake internals
+            filtered_sorted = sorted(filtered, key=lambda p: len(p.parts))
+            return str(filtered_sorted[0])
+        # fallback to original list if filtering removed all
         for e in exes:
             if e.name.lower() in ("main.exe", "app.exe", "debug.exe"):
                 return str(e)
-        # fallback: choose the first exe found
         return str(exes[0])
     # check common build dirs
     for candidate in (root / "build", root / "bin", root / "debug", root / "release"):
@@ -283,8 +313,13 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
     if not isinstance(jt, list):
         return [{"test": "Generated Tests", "status": "FAIL", "detail": "generated_tests.json is not a JSON array."}]
 
-    # --- Coalesce build commands: detect build-like commands and run them once up-front.
-    build_cmds = []
+    # --- Coalesce build/configure commands: detect build-like commands and run them once up-front.
+    build_map = {}      # normalized -> original command (first seen)
+    configure_map = {}  # normalized -> original configure command (cmake -S .. -B ..)
+
+    # reuse global normalizer so EXECUTED_BUILD_CMDS comparisons match
+    def normalize_build_cmd_str(cmd: str):
+        return _normalize_build_cmd_str_global(cmd)
 
     # Choose a safe default execution cwd for pre-build steps (used on Windows translation and run_command)
     try:
@@ -313,35 +348,134 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
             return True
         return False
 
-    # collect unique build commands preserving order
+    # collect unique build commands preserving order, but normalize so similar build commands are coalesced
     for t in jt:
         cmds_t = t.get('commands') or t.get('command') or []
         if isinstance(cmds_t, str):
             cmds_t = [cmds_t]
         for c in cmds_t:
             try:
-                cs = str(c).strip()
+                raw_cs = str(c)
             except Exception:
                 continue
+            # sanitize: remove leading/comment-only lines to avoid misclassifying
+            try:
+                lines = raw_cs.splitlines()
+                non_comment_lines = [ln for ln in lines if not ln.strip().startswith('#')]
+                cs = '\n'.join(non_comment_lines).strip()
+            except Exception:
+                cs = raw_cs.strip()
             if not cs:
                 continue
-            if is_build_cmd(cs) and cs not in build_cmds:
-                build_cmds.append(cs)
+            if is_build_cmd(cs):
+                # If this is a cmake configure (has -B) prefer to record as configure
+                if re.search(r'cmake[^\n]*\s+-B\s+"?[^\"]+"?', cs, re.I):
+                    norm_cfg = normalize_build_cmd_str(cs) + ':configure'
+                    if norm_cfg not in configure_map:
+                        configure_map[norm_cfg] = cs
+                else:
+                    norm = normalize_build_cmd_str(cs)
+                    if norm not in build_map:
+                        build_map[norm] = cs
 
     # run each unique build command once (if any)
     build_results = {}
     prebuild_outputs = []
-    if build_cmds:
-        for bc in build_cmds:
+    # map absolute build dir -> discovered exe path
+    build_exe_map = {}
+    if configure_map or build_map:
+        # Run configure commands first (cmake -S ... -B ...) so build dirs exist
+        for norm_cfg, bc in list(configure_map.items()):
             run_bc = bc
             try:
                 if os.name == 'nt':
                     run_bc = _translate_command_for_windows(bc, exec_cwd)
+                    run_bc = re.sub(r"\s+--\s+-j\s*\d+\b", '', run_bc)
+                    run_bc = re.sub(r"\s+-j\s*\d+\b", '', run_bc)
             except Exception:
                 run_bc = bc
-            ok, out = run_command(run_bc, cwd=exec_cwd)
-            build_results[bc] = (ok, out)
+            try:
+                if norm_cfg in EXECUTED_BUILD_CMDS:
+                    ok, out = True, f"Skipped configure (already executed): {bc}"
+                else:
+                    ok, out = run_command(run_bc, cwd=exec_cwd)
+                    EXECUTED_BUILD_CMDS.add(norm_cfg)
+            except Exception as _e:
+                ok, out = False, str(_e)
+            build_results[norm_cfg] = (ok, out)
+            # try to discover exe under configured build dir
+            try:
+                m3 = re.search(r'cmake[^\n]*\s+-B\s+"?([^\s\"]+)"?', bc, re.I)
+                if m3:
+                    bd = os.path.normpath(m3.group(1))
+                    try:
+                        found_exe = _find_executable(Path(bd))
+                        if found_exe:
+                            build_exe_map[os.path.abspath(bd)] = found_exe
+                    except Exception:
+                        pass
+                    EXECUTED_BUILD_DIRS.add(os.path.abspath(bd))
+            except Exception:
+                pass
             prebuild_outputs.append(f"$ {bc}\n{out}")
+
+        # Now run actual build commands (cmake --build / ninja / make etc.)
+        for norm, bc in list(build_map.items()):
+            run_bc = bc
+            try:
+                if os.name == 'nt':
+                    run_bc = _translate_command_for_windows(bc, exec_cwd)
+                    # strip Unix-style -j flags passed after -- for cmake --build when running on Windows
+                    run_bc = re.sub(r"\s+--\s+-j\s*\d+\b", '', run_bc)
+                    run_bc = re.sub(r"\s+-j\s*\d+\b", '', run_bc)
+            except Exception:
+                run_bc = bc
+            # Skip if we've already executed an equivalent build command in this process
+            try:
+                if norm in EXECUTED_BUILD_CMDS:
+                    ok, out = True, f"Skipped build (already executed): {bc}"
+                else:
+                    ok, out = run_command(run_bc, cwd=exec_cwd)
+                    # record that we've run this normalized build command
+                    EXECUTED_BUILD_CMDS.add(norm)
+            except Exception as _e:
+                ok, out = False, str(_e)
+            build_results[norm] = (ok, out)
+            # attempt to record discovered exe for this build dir
+            try:
+                m2 = re.search(r'cmake\s+--build\s+"?([^\s\"]+)"?', bc, re.I)
+                bd = None
+                if m2:
+                    bd = os.path.normpath(m2.group(1))
+                else:
+                    # also detect cmake configure with -B <dir>
+                    m3 = re.search(r'cmake[^\n]*\s+-B\s+"?([^\s\"]+)"?', bc, re.I)
+                    if m3:
+                        bd = os.path.normpath(m3.group(1))
+                if bd:
+                    try:
+                        found_exe = _find_executable(Path(bd))
+                        if found_exe:
+                            build_exe_map[os.path.abspath(bd)] = found_exe
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            prebuild_outputs.append(f"$ {bc}\n{out}")
+            # attempt to record build dir if this was a cmake --build invocation
+            try:
+                m = re.search(r'cmake\s+--build\s+"?([^\s\"]+)"?', bc, re.I)
+                if m:
+                    bd = os.path.normpath(m.group(1))
+                    EXECUTED_BUILD_DIRS.add(os.path.abspath(bd))
+                else:
+                    # also detect cmake configure with -B <dir>
+                    m2 = re.search(r'cmake[^\n]*\s+-B\s+"?([^\s\"]+)"?', bc, re.I)
+                    if m2:
+                        bd2 = os.path.normpath(m2.group(1))
+                        EXECUTED_BUILD_DIRS.add(os.path.abspath(bd2))
+            except Exception:
+                pass
 
     # If we executed builds, include that output at the top of the first test detail
     if prebuild_outputs:
@@ -350,8 +484,40 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
         prebuild_summary = ''
 
     # Now iterate tests (skipping or removing build steps we've already executed)
+    # Normalize loaded tests: skip tests that invoke compiler helper exes produced by CMake
+    try:
+        for tt in jt:
+            try:
+                cmds_tt = tt.get('commands') or tt.get('command') or []
+                if isinstance(cmds_tt, str):
+                    cmds_tt = [cmds_tt]
+                skip = False
+                for c in cmds_tt:
+                    try:
+                        s = str(c)
+                        m = re.search(r'"([^"]+)"', s)
+                        token = None
+                        if m:
+                            token = m.group(1)
+                        else:
+                            token = s.split(None,1)[0]
+                        if token and ('cmakefiles' in token.lower() or 'compilerid' in token.lower() or token.lower().endswith('a.exe')):
+                            skip = True
+                            break
+                    except Exception:
+                        continue
+                if skip:
+                    tt['_skip_compiler_helper'] = True
+            except Exception:
+                continue
+    except Exception:
+        pass
+
     for t in jt:
         name = t.get('name') or t.get('title') or t.get('test') or 'Generated Test'
+        if t.get('_skip_compiler_helper'):
+            results.append({"test": name, "status": "SKIPPED", "detail": "Skipped test that invoked compiler helper executable (CompilerId / a.exe)."})
+            continue
         cmds = t.get('commands') or t.get('command') or []
         expected = t.get('expected')
         # Normalize commands to list
@@ -417,10 +583,51 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
                 cs = str(c).strip()
             except Exception:
                 cs = ''
-            if cs and is_build_cmd(cs) and cs in build_results:
-                removed_builds.append(cs)
+            if cs and is_build_cmd(cs):
+                ncs = normalize_build_cmd_str(cs)
+                if ncs in build_results:
+                    removed_builds.append(ncs)
+                    continue
             else:
                 filtered_cmds.append(c)
+
+        # Heuristic: if filtered_cmds reference an injected_doctest path under a build
+        # directory but the exact path does not exist (e.g., Visual Studio generator
+        # places exe under build/Debug), try to locate the real exe and rewrite the
+        # command to point to the discovered executable.
+        try:
+            new_filtered = []
+            for c in filtered_cmds:
+                cs = str(c)
+                rewritten = cs
+                if 'injected_doctest_tests' in cs and 'injected_doctest' in cs:
+                    # attempt to extract the injected_doctest_tests path
+                    m = re.search(r"([A-Za-z]:)?[\\/][^\n]*injected_doctest_tests[\\/][^\s]*", cs)
+                    if m:
+                        candidate = m.group(0)
+                        try:
+                            bdir = Path(candidate).parent / 'build'
+                            if not bdir.exists():
+                                # try path relative to repo cwd
+                                bdir = Path(str(bdir))
+                            if bdir.exists():
+                                # if we discovered an exe for this build earlier, use it
+                                try:
+                                    bd_abs = os.path.abspath(str(bdir))
+                                    found = build_exe_map.get(bd_abs)
+                                    if not found:
+                                        found = _find_executable(bdir)
+                                    if found:
+                                        # replace the expected path with the discovered path
+                                        rewritten = cs.replace(str(Path(candidate) / ('injected_doctest.exe' if os.name=='nt' else 'injected_doctest')), found)
+                                except Exception:
+                                    pass
+                        except Exception:
+                            pass
+                new_filtered.append(rewritten)
+            filtered_cmds = new_filtered
+        except Exception:
+            pass
 
         # If this test only contained build commands we already executed, record a SKIPPED/FAIL accordingly
         if not filtered_cmds:
@@ -434,28 +641,137 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
             # otherwise fallthrough
 
         for cmd in filtered_cmds:
-            # Skip commands that are comments (start with '#') or empty
+            # Normalize to string and sanitize: remove leading/comment-only lines
             try:
                 cmd_text = str(cmd)
             except Exception:
                 cmd_text = ''
-            if cmd_text.strip().startswith('#') or cmd_text.strip() == '':
-                combined_output.append(f"$ {cmd_text}\n<skipped comment or empty command>")
-                # do not mark as failure; continue to next command
+            try:
+                # remove any lines that are pure comments (start with '#')
+                lines = cmd_text.splitlines()
+                sanitized_lines = [ln for ln in lines if not ln.strip().startswith('#')]
+                cmd_text = "\n".join(sanitized_lines).strip()
+            except Exception:
+                pass
+
+            # If after sanitization the command is empty, skip it
+            if cmd_text == '':
+                combined_output.append(f"$ {str(cmd)}\n<skipped comment or empty command after sanitization>")
                 continue
 
             # If we're on Windows, try to translate common Unix commands into
             # PowerShell-invoked commands so generated_tests.json (often Unix-style)
-            # execute correctly.
-            run_cmd = cmd
+            # execute correctly. Use the sanitized command text.
+            run_cmd = cmd_text
+            # If the command is a path to an executable that doesn't exist (common
+            # for Visual Studio generator where executables live in Debug/Release),
+            # try to locate the produced executable under the build dir and use
+            # that path instead.
             try:
-                if os.name == 'nt' and isinstance(cmd, str):
-                    run_cmd = _translate_command_for_windows(cmd, exec_cwd)
+                if isinstance(run_cmd, str):
+                    first_tok = run_cmd.split(None, 1)[0].strip('"')
+                    pfirst = Path(first_tok)
+                    if not pfirst.exists():
+                        # If path indicates a build/run under a 'build' folder, try to find the exe
+                        if 'build' in str(pfirst).lower():
+                            # attempt to find an executable under the nearest 'build' folder
+                            build_candidate = None
+                            for part in pfirst.parents:
+                                if part.name.lower() == 'build':
+                                    build_candidate = part
+                                    break
+                            if not build_candidate:
+                                # fallback: try parent of the provided path
+                                build_candidate = pfirst.parent
+                            if build_candidate and build_candidate.exists():
+                                found = _find_executable(build_candidate)
+                                if found:
+                                    rest = ''
+                                    if len(run_cmd.split(None, 1)) > 1:
+                                        rest = run_cmd.split(None, 1)[1]
+                                    run_cmd = f'"{found}"' + ('' if not rest else ' ' + rest)
             except Exception:
-                run_cmd = cmd
+                pass
+            try:
+                if os.name == 'nt' and isinstance(cmd_text, str):
+                    # First translate simple Unix-like commands to PowerShell where appropriate
+                    translated = _translate_command_for_windows(cmd_text, exec_cwd)
+                    # If translation produced a PowerShell wrapper, keep it as a string command
+                    if isinstance(translated, str) and translated.strip().lower().startswith('powershell'):
+                        run_cmd = translated
+                    else:
+                        run_cmd = translated
+                else:
+                    run_cmd = cmd_text
+            except Exception:
+                run_cmd = cmd_text
 
-            ok, out = run_command(run_cmd, cwd=exec_cwd)
-            combined_output.append(f"$ {cmd}\n{out}")
+            # On Windows, if the command references a real .exe file, prefer to execute
+            # it directly using a list argv (no shell) to avoid quoting issues.
+            try:
+                if os.name == 'nt' and isinstance(run_cmd, str):
+                    srun = run_cmd.strip()
+                    # If it's a PowerShell-wrapped command, leave it as string
+                    if srun.lower().startswith('powershell'):
+                        ok, out = run_command(srun, cwd=exec_cwd)
+                    else:
+                        # Try to extract a leading quoted or unquoted token as exe path
+                        m_q = re.match(r'^"([^"]+)"(.*)$', srun)
+                        if m_q:
+                            exe_token = m_q.group(1)
+                            rest = m_q.group(2).strip()
+                        else:
+                            parts = srun.split(None, 1)
+                            exe_token = parts[0]
+                            rest = parts[1] if len(parts) > 1 else ''
+
+                        # Resolve potential relative paths against exec_cwd and repo
+                        candidate_paths = [Path(exe_token)]
+                        if exec_cwd:
+                            candidate_paths.append(Path(exec_cwd) / exe_token)
+                        try:
+                            candidate_paths.append(Path.cwd() / exe_token)
+                        except Exception:
+                            pass
+                        found_exe = None
+                        for cp in candidate_paths:
+                            try:
+                                if cp.exists():
+                                    found_exe = str(cp.resolve())
+                                    break
+                            except Exception:
+                                continue
+
+                        if not found_exe:
+                            # If the token appears to reference a build folder, try to locate an exe under it
+                            if 'build' in exe_token.lower() or 'injected_doctest' in exe_token.lower():
+                                try:
+                                    bd = Path(exe_token)
+                                    for part in bd.parents:
+                                        if part.name.lower() == 'build':
+                                            cand = _find_executable(part)
+                                            if cand:
+                                                found_exe = cand
+                                                break
+                                except Exception:
+                                    found_exe = None
+
+                        if found_exe:
+                            # Build argv safely using shlex (posix=False on Windows)
+                            try:
+                                argv_rest = shlex.split(rest, posix=False) if rest else []
+                            except Exception:
+                                argv_rest = rest.split() if rest else []
+                            argv = [found_exe] + argv_rest
+                            ok, out = run_command(argv, cwd=exec_cwd)
+                        else:
+                            # fallback to running as a shell string
+                            ok, out = run_command(srun, cwd=exec_cwd)
+                else:
+                    ok, out = run_command(run_cmd, cwd=exec_cwd)
+            except Exception:
+                ok, out = run_command(run_cmd, cwd=exec_cwd)
+            combined_output.append(f"$ {cmd_text}\n{out}")
             if not ok:
                 overall_ok = False
 
@@ -498,7 +814,33 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
         if jt_path:
             detail = f"[loaded from: {jt_path}]\n" + detail
 
-        results.append({"test": name, "status": status, "detail": detail})
+        # Try to extract structured PERF_METRICS JSON emitted by perf tests
+        perf_metrics = None
+        try:
+            m = re.search(r'PERF_METRICS:\s*(\{.*\})', detail, re.S)
+            if m:
+                try:
+                    perf_metrics = json.loads(m.group(1))
+                except Exception:
+                    perf_metrics = None
+        except Exception:
+            perf_metrics = None
+
+        result_obj = {"test": name, "status": status, "detail": detail}
+        if perf_metrics is not None:
+            # place JSON string into 'info' so the UI renderer can parse it
+            try:
+                result_obj['info'] = json.dumps(perf_metrics)
+            except Exception:
+                result_obj['info'] = str(perf_metrics)
+            # also expose top-level numeric summary for convenience
+            try:
+                if isinstance(perf_metrics, dict) and 'avg_ms' in perf_metrics:
+                    result_obj['duration_ms'] = perf_metrics.get('avg_ms')
+            except Exception:
+                pass
+
+        results.append(result_obj)
 
     return results
 
@@ -519,6 +861,74 @@ def _write_temp_generated_tests(out_dir: Path, existing: list, new: list):
         combined.extend(new)
     try:
         (Path(out_dir)).mkdir(parents=True, exist_ok=True)
+        # Normalize command paths inside tests to absolute where possible
+        def _normalize_cmd_in_test(cmd, bases):
+            try:
+                if not isinstance(cmd, str):
+                    return cmd
+                # look for first quoted path
+                m = re.search(r'"([^"]+)"', cmd)
+                if m:
+                    inner = m.group(1)
+                    p = Path(inner)
+                    if not p.is_absolute():
+                        for b in bases:
+                            try:
+                                cand = (Path(b) / inner).resolve()
+                                if cand.exists():
+                                    return cmd.replace(f'"{inner}"', f'"{str(cand)}"')
+                            except Exception:
+                                continue
+                    else:
+                        return cmd
+                else:
+                    # no quoted path, check leading token
+                    tok = cmd.split(None, 1)[0]
+                    p = Path(tok)
+                    if not p.is_absolute():
+                        for b in bases:
+                            try:
+                                cand = (Path(b) / tok).resolve()
+                                if cand.exists():
+                                    rest = ''
+                                    if len(cmd.split(None, 1)) > 1:
+                                        rest = cmd.split(None, 1)[1]
+                                    return f'"{str(cand)}"' + ('' if not rest else ' ' + rest)
+                            except Exception:
+                                continue
+                return cmd
+            except Exception:
+                return cmd
+
+        # prepare bases for resolution: out_dir, cwd, and repo-root candidates
+        bases = [str(Path(out_dir).resolve()), str(Path.cwd())]
+        # apply normalization to combined tests
+        def _norm_tests(tests):
+            for tt in tests:
+                try:
+                    cmds = tt.get('commands') or tt.get('command') or []
+                    if isinstance(cmds, str):
+                        cmds = [cmds]
+                    new_cmds = []
+                    for c in cmds:
+                        new_cmds.append(_normalize_cmd_in_test(c, bases))
+                    if isinstance(tt.get('commands'), str):
+                        tt['commands'] = new_cmds
+                    else:
+                        tt['commands'] = new_cmds
+                except Exception:
+                    continue
+
+        if isinstance(existing, list):
+            _norm_tests(existing)
+        if isinstance(new, list):
+            _norm_tests(new)
+
+        combined = []
+        if isinstance(existing, list):
+            combined.extend(existing)
+        if isinstance(new, list):
+            combined.extend(new)
         gj.write_text(json.dumps(combined, indent=2), encoding='utf-8')
     except Exception:
         pass
@@ -588,11 +998,314 @@ def generate_equivalence_tests(repo: Path, lang: str, out_dir: Path):
                 # create several invocations with different args
                 arg_sets = [[], ['0'], ['-1'], ['10000000000'], [''], ['a'*200]]
                 for i, args in enumerate(arg_sets[:5]):
-                    cmd = f'"{exe}"' + ('' if not args else ' ' + ' '.join(args))
+                    try:
+                        exe_abs = str(Path(exe).resolve())
+                    except Exception:
+                        exe_abs = str(exe)
+                    cmd = f'"{exe_abs}"' + ('' if not args else ' ' + ' '.join(args))
                     tests.append({'name': f'equiv:exe:{i}', 'title': f'Equiv exe {Path(exe).name} #{i}', 'commands': [cmd], 'expected': ''})
             else:
                 # no exe found: skip
                 return []
+    except Exception:
+        return []
+    return tests
+
+
+def generate_boundary_tests(repo: Path, lang: str, out_dir: Path):
+    """Generate boundary/edge-case tests for functions and executables.
+
+    These are small tests that exercise empty inputs, very large inputs,
+    and obvious edge conditions described in the requirements document
+    (e.g., many nodes, empty labels, maximal string sizes).
+    """
+    tests = []
+    try:
+        out_dir = Path(out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        if lang in ('py', 'python'):
+            for pyf in repo.rglob('*.py'):
+                if 'tests' in pyf.parts or pyf.name.startswith('test_'):
+                    continue
+                try:
+                    src = pyf.read_text(encoding='utf-8', errors='ignore')
+                    tree = ast.parse(src)
+                except Exception:
+                    continue
+                module_name = None
+                try:
+                    module_name = str(pyf.relative_to(repo)).replace('\\','/').rsplit('.py',1)[0].replace('/','.')
+                except Exception:
+                    module_name = pyf.stem
+
+                for node in tree.body:
+                    if isinstance(node, ast.FunctionDef):
+                        func_name = node.name
+                        # boundary cases: empty input, very large input, None where allowed
+                        arg_sets = [[], [''], ['a'*20000], [None]]
+                        for i, args in enumerate(arg_sets[:3]):
+                            script_path = out_dir / f'boundary_{pyf.stem}_{func_name}_{i}.py'
+                            try:
+                                with open(script_path, 'w', encoding='utf-8') as sf:
+                                    sf.write('import sys\n')
+                                    sf.write(f'from {module_name} import {func_name}\n')
+                                    sf.write('try:\n')
+                                    arg_repr = ', '.join(repr(a) for a in args)
+                                    sf.write(f'    res = {func_name}({arg_repr})\n')
+                                    sf.write('    print("BOUNDARY_OK", type(res))\n')
+                                    sf.write('    sys.exit(0)\n')
+                                    sf.write('except Exception as e:\n')
+                                    sf.write('    print("BOUNDARY_EXC", e)\n')
+                                    sf.write('    sys.exit(1)\n')
+                                tests.append({'name': f'boundary:{pyf.stem}:{func_name}:{i}', 'title': f'Boundary {pyf.stem}.{func_name} #{i}', 'commands': [f'py -3 "{str(script_path)}"'], 'expected': ''})
+                            except Exception:
+                                continue
+        elif lang in ('cpp', 'c++'):
+            exe = _find_executable(repo)
+            if exe:
+                # pass large payloads or flags that a CLI may accept; many GUI apps will ignore and exit
+                arg_sets = [['--nodes', '10000'], ['--export', 'svg'], ['--label', '']]
+                for i, args in enumerate(arg_sets):
+                    try:
+                        exe_abs = str(Path(exe).resolve())
+                    except Exception:
+                        exe_abs = str(exe)
+                    cmd = f'"{exe_abs}"' + ('' if not args else ' ' + ' '.join(args))
+                    tests.append({'name': f'boundary:exe:{i}', 'title': f'Boundary exe {Path(exe).name} #{i}', 'commands': [cmd], 'expected': ''})
+    except Exception:
+        return []
+    return tests
+
+
+def generate_performance_tests(repo: Path, lang: str, out_dir: Path):
+    """Generate lightweight performance/stress tests.
+
+    These create simple scripts that simulate large workloads (many nodes,
+    many connections, big exports) and measure execution time. They are
+    conservative by default (short timeouts) to avoid long CI runs.
+    """
+    tests = []
+    try:
+        out_dir = Path(out_dir)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        # Create several Python-based synthetic perf tests that are safe to run
+        # and emit a structured PERF_METRICS JSON line for the UI to parse.
+        perf_py = out_dir / 'perf_generate_large_graph.py'
+        try:
+            perf_py.write_text("""import time, json
+def make_graph(n):
+    nodes = [{'id': i, 'label': 'n'+str(i)} for i in range(n)]
+    edges = [{'src': i, 'dst': (i+1)%n} for i in range(n)]
+    return {'nodes': nodes, 'edges': edges}
+
+def run_it(n):
+    start = time.time()
+    g = make_graph(n)
+    _ = json.dumps(g)
+    return (time.time()-start)
+
+measurements = []
+for i in range(3):
+    d = run_it(20000)
+    measurements.append(int(d*1000))
+
+cnt = len(measurements)
+avg = sum(measurements)/cnt if cnt else 0
+metrics = {
+    'measurements_ms': measurements,
+    'count': cnt,
+    'avg_ms': avg,
+    'min_ms': min(measurements) if measurements else None,
+    'max_ms': max(measurements) if measurements else None,
+    'throughput_ops_per_s': round(cnt / (sum(measurements)/1000) if sum(measurements) else 0, 2)
+}
+print('PERF_METRICS: ' + json.dumps(metrics))
+# keep legacy human-readable marker too
+if avg < 5000:
+    print('PERF_OK')
+    exit(0)
+else:
+    print('PERF_SLOW', avg)
+    exit(2)
+""", encoding='utf-8')
+            perf_cmd = f'py -3 "{str(perf_py.resolve())}"'
+            tests.append({'name': 'perf:generate_large_graph', 'title': 'Perf generate large graph', 'commands': [perf_cmd], 'expected': {'contains': 'PERF_OK'}})
+        except Exception:
+            pass
+
+        # If there's a CLI executable, add a lightweight stress run using repeated invocations
+        exe = _find_executable(repo)
+        if exe:
+            try:
+                # create a small Python runner that runs the exe multiple times and emits PERF_METRICS JSON
+                runner = out_dir / 'perf_exe_runner.py'
+                runner.write_text(f"""import time, json, subprocess
+exe = r'{str(exe)}'
+measurements = []
+for i in range(3):
+    t0 = time.time()
+    try:
+        subprocess.run([exe, '--stress', '10'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    except Exception:
+        # fallback: run without args
+        try:
+            subprocess.run([exe], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        except Exception:
+            pass
+    d = (time.time()-t0)
+    measurements.append(int(d*1000))
+cnt = len(measurements)
+avg = sum(measurements)/cnt if cnt else 0
+metrics = {{'measurements_ms': measurements, 'count': cnt, 'avg_ms': avg, 'min_ms': min(measurements) if measurements else None, 'max_ms': max(measurements) if measurements else None, 'throughput_ops_per_s': round(cnt / (sum(measurements)/1000) if sum(measurements) else 0, 2)}}
+print('PERF_METRICS: ' + json.dumps(metrics))
+if avg < 5000:
+    print('PERF_OK')
+    exit(0)
+else:
+    print('PERF_SLOW', avg)
+    exit(2)
+""", encoding='utf-8')
+                tests.append({'name': 'perf:exe_stress_short', 'title': f'Perf exe short {Path(exe).name}', 'commands': [f'py -3 "{str(runner)}"'], 'expected': {'contains': 'PERF_OK'}})
+            except Exception:
+                # fallback to a simple single-run command
+                tests.append({'name': 'perf:exe_stress_short', 'title': f'Perf exe short {Path(exe).name}', 'commands': [f'"{exe}" --stress 1000'], 'expected': ''})
+        # Add a synthetic memory allocation perf test (Python-only synthetic)
+        mem_py = out_dir / 'perf_memory_alloc.py'
+        try:
+            mem_py.write_text("""import time, json
+lst = []
+measurements = []
+for i in range(3):
+    t0 = time.time()
+    lst = [b'x'*1024 for _ in range(100000)]
+    d = time.time()-t0
+    measurements.append(int(d*1000))
+    lst = None
+cnt = len(measurements)
+avg = sum(measurements)/cnt if cnt else 0
+metrics = {'measurements_ms': measurements, 'count': cnt, 'avg_ms': avg, 'min_ms': min(measurements) if measurements else None, 'max_ms': max(measurements) if measurements else None}
+print('PERF_METRICS: ' + json.dumps(metrics))
+print('PERF_OK')
+""", encoding='utf-8')
+            tests.append({'name': 'perf:memory_alloc', 'title': 'Perf memory alloc', 'commands': [f'py -3 "{str(mem_py)}"'], 'expected': {'contains': 'PERF_OK'}})
+        except Exception:
+            pass
+
+        # Additional performance scenarios: disk IO, JSON serialization, threaded work, CPU render sim, sqlite bulk insert
+        try:
+            # Disk IO: write and read a moderately large file
+            disk_py = out_dir / 'perf_disk_io.py'
+            disk_py.write_text("""import time, json, os
+fn = 'perf_tmp.bin'
+measurements = []
+for i in range(3):
+    t0 = time.time()
+    with open(fn, 'wb') as f:
+        f.write(os.urandom(2_000_000))
+    with open(fn, 'rb') as f:
+        _ = f.read()
+    measurements.append(int((time.time()-t0)*1000))
+try:
+    os.remove(fn)
+except Exception:
+    pass
+metrics = {'measurements_ms': measurements, 'count': len(measurements), 'avg_ms': sum(measurements)/len(measurements) if measurements else 0}
+print('PERF_METRICS: ' + json.dumps(metrics))
+print('PERF_OK')
+""", encoding='utf-8')
+            tests.append({'name': 'perf:disk_io', 'title': 'Perf disk IO', 'commands': [f'py -3 "{str(disk_py)}"'], 'expected': {'contains': 'PERF_OK'}})
+        except Exception:
+            pass
+
+        try:
+            # JSON serialization: serialize/deserialize a moderately large structure repeatedly
+            json_py = out_dir / 'perf_json_serialize.py'
+            json_py.write_text("""import json, time
+data = [{'i':i,'s':'x'*200} for i in range(20000)]
+measurements = []
+for _ in range(3):
+    t0 = time.time()
+    s = json.dumps(data)
+    _ = json.loads(s)
+    measurements.append(int((time.time()-t0)*1000))
+metrics = {'measurements_ms': measurements, 'count': len(measurements), 'avg_ms': sum(measurements)/len(measurements) if measurements else 0}
+print('PERF_METRICS: ' + json.dumps(metrics))
+print('PERF_OK')
+""", encoding='utf-8')
+            tests.append({'name': 'perf:json_serialize', 'title': 'Perf JSON serialize', 'commands': [f'py -3 "{str(json_py)}"'], 'expected': {'contains': 'PERF_OK'}})
+        except Exception:
+            pass
+
+        try:
+            # Threaded work: spawn worker threads to perform small CPU tasks
+            thread_py = out_dir / 'perf_thread_spawn.py'
+            thread_py.write_text("""import time, json, threading
+def work(n):
+    s=0
+    for i in range(n): s += i*i
+    return s
+measurements = []
+for _ in range(3):
+    t0 = time.time()
+    threads = []
+    for i in range(8):
+        t = threading.Thread(target=work, args=(200000,))
+        t.start()
+        threads.append(t)
+    for t in threads: t.join()
+    measurements.append(int((time.time()-t0)*1000))
+metrics = {'measurements_ms': measurements, 'count': len(measurements), 'avg_ms': sum(measurements)/len(measurements) if measurements else 0}
+print('PERF_METRICS: ' + json.dumps(metrics))
+print('PERF_OK')
+""", encoding='utf-8')
+            tests.append({'name': 'perf:threaded_work', 'title': 'Perf threaded work', 'commands': [f'py -3 "{str(thread_py)}"'], 'expected': {'contains': 'PERF_OK'}})
+        except Exception:
+            pass
+
+        try:
+            # CPU render simulation: perform many math ops to simulate rendering
+            render_py = out_dir / 'perf_render_sim.py'
+            render_py.write_text("""import time, json
+def render_sim(n):
+    s=0
+    for i in range(n):
+        s += (i**0.5) * (i%7)
+    return s
+measurements = []
+for _ in range(3):
+    t0 = time.time()
+    _ = render_sim(2_000_00)
+    measurements.append(int((time.time()-t0)*1000))
+metrics = {'measurements_ms': measurements, 'count': len(measurements), 'avg_ms': sum(measurements)/len(measurements) if measurements else 0}
+print('PERF_METRICS: ' + json.dumps(metrics))
+print('PERF_OK')
+""", encoding='utf-8')
+            tests.append({'name': 'perf:render_sim', 'title': 'Perf render simulation', 'commands': [f'py -3 "{str(render_py)}"'], 'expected': {'contains': 'PERF_OK'}})
+        except Exception:
+            pass
+
+        try:
+            # SQLite bulk insert: write many rows and measure time
+            sql_py = out_dir / 'perf_sqlite_bulk_insert.py'
+            sql_py.write_text("""import time, json, sqlite3
+con = sqlite3.connect(':memory:')
+cur = con.cursor()
+cur.execute('CREATE TABLE t (i INTEGER, s TEXT)')
+measurements = []
+for _ in range(3):
+    t0 = time.time()
+    cur.execute('BEGIN')
+    for i in range(20000):
+        cur.execute('INSERT INTO t VALUES (?,?)', (i, 'x'*50))
+    con.commit()
+    measurements.append(int((time.time()-t0)*1000))
+metrics = {'measurements_ms': measurements, 'count': len(measurements), 'avg_ms': sum(measurements)/len(measurements) if measurements else 0}
+print('PERF_METRICS: ' + json.dumps(metrics))
+print('PERF_OK')
+""", encoding='utf-8')
+            tests.append({'name': 'perf:sqlite_bulk', 'title': 'Perf sqlite bulk insert', 'commands': [f'py -3 "{str(sql_py)}"'], 'expected': {'contains': 'PERF_OK'}})
+        except Exception:
+            pass
     except Exception:
         return []
     return tests
@@ -770,8 +1483,21 @@ def try_qmake_build(repo: Path):
         return False, out
     # try make variants in the same directory where qmake ran
     for mk in ("mingw32-make", "make"):
+        # Skip if we've already built this qmake target in this run
+        try:
+            norm = _normalize_build_cmd_str_global(f"{qmake_cmd} && {mk}")
+            if norm in EXECUTED_BUILD_CMDS:
+                exe = _find_executable(pro_to_use.parent)
+                return True, exe or f"Skipped qmake build (already executed): {mk}"
+        except Exception:
+            pass
         ok2, out2 = run_command(mk, cwd=str(pro_to_use.parent))
         if ok2:
+            try:
+                EXECUTED_BUILD_CMDS.add(_normalize_build_cmd_str_global(f"{qmake_cmd} && {mk}"))
+                EXECUTED_BUILD_DIRS.add(os.path.abspath(str(pro_to_use.parent)))
+            except Exception:
+                pass
             exe = _find_executable(pro_to_use.parent)
             return True, exe or out2
     # restore env var
@@ -797,6 +1523,35 @@ def try_qmake_build(repo: Path):
 def try_cmake_build(repo: Path):
     """Run cmake configure+build in a build subdir and return (success, exe_or_output)."""
     build_dir = repo / "build"
+    # If we've already built this build_dir earlier during this run, skip rebuild
+    try:
+        bd_abs = os.path.abspath(str(build_dir))
+        if bd_abs in EXECUTED_BUILD_DIRS:
+            exe = _find_executable(build_dir)
+            return True, exe or f"Skipped cmake build; previously built: {build_dir}"
+    except Exception:
+        pass
+    # If a previous build output exists (CTest file or produced executable), skip rebuild
+    try:
+        if build_dir.exists():
+            # CTest/CTestTestfile.cmake indicates a configured/CTest aware build
+            if (build_dir / 'CTestTestfile.cmake').exists():
+                try:
+                    EXECUTED_BUILD_DIRS.add(os.path.abspath(str(build_dir)))
+                except Exception:
+                    pass
+                exe = _find_executable(build_dir)
+                return True, exe or f"Skipped cmake build; existing build dir: {build_dir}"
+            # if an executable already exists in the build tree, assume built
+            exe = _find_executable(build_dir)
+            if exe:
+                try:
+                    EXECUTED_BUILD_DIRS.add(os.path.abspath(str(build_dir)))
+                except Exception:
+                    pass
+                return True, exe
+    except Exception:
+        pass
     # configure
     try:
         is_windows = os.name == 'nt'
@@ -818,8 +1573,20 @@ def try_cmake_build(repo: Path):
         if not ok:
             return False, out
     # build
-    ok2, out2 = run_command(f"cmake --build {str(build_dir)} -- -j 1", cwd=str(repo))
+    # On Windows MSBuild does not accept Unix '-j' flags; avoid passing them.
+    try:
+        if os.name == 'nt':
+            build_cmd = f"cmake --build {str(build_dir)}"
+        else:
+            build_cmd = f"cmake --build {str(build_dir)} -- -j 1"
+    except Exception:
+        build_cmd = f"cmake --build {str(build_dir)} -- -j 1"
+    ok2, out2 = run_command(build_cmd, cwd=str(repo))
     if ok2:
+        try:
+            EXECUTED_BUILD_DIRS.add(os.path.abspath(str(build_dir)))
+        except Exception:
+            pass
         exe = _find_executable(build_dir)
         return True, exe or out2
     return False, out2
@@ -839,29 +1606,55 @@ def run_cpp_unit_tests(search_dirs):
         # that are part of the build are produced reliably. For each candidate
         # search dir, if a CMakeLists.txt or .pro exists, attempt to configure+build.
         built_any = False
+        # Collect unique candidate build roots so we do not rebuild the same
+        # CMake/qmake project multiple times when search_dirs contain nested
+        # or duplicate paths. Map canonical absolute path -> Path object.
+        unique_cmake_roots = {}
+        unique_qmake_roots = {}
         for d in search_dirs:
             try:
                 bd = Path(d)
                 if not bd.exists():
                     continue
-                # If a CMakeLists.txt is present, run a configure+build pass
-                if (bd / 'CMakeLists.txt').exists():
-                    try:
-                        ok, out = try_cmake_build(bd)
-                        results.append({'test': f'cmake_build:{bd}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
-                        if ok:
-                            built_any = True
-                    except Exception as e:
-                        results.append({'test': f'cmake_build:{bd}', 'status': 'FAIL', 'detail': str(e)})
-                # If qmake project present, attempt qmake build which may produce tests
-                elif any((bd / p).exists() for p in bd.glob('*.pro')):
-                    try:
-                        ok, out = try_qmake_build(bd)
-                        results.append({'test': f'qmake_build:{bd}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
-                        if ok:
-                            built_any = True
-                    except Exception as e:
-                        results.append({'test': f'qmake_build:{bd}', 'status': 'FAIL', 'detail': str(e)})
+                # Search for a CMakeLists.txt in this tree and prefer the top-most
+                # CMake root we encounter to avoid building subprojects repeatedly.
+                cm_files = list(bd.rglob('CMakeLists.txt'))
+                if cm_files:
+                    # pick the shallowest parent (shortest path) as the project root
+                    cm_files_sorted = sorted(cm_files, key=lambda p: len(p.parts))
+                    root = cm_files_sorted[0].parent
+                    unique_cmake_roots[os.path.abspath(str(root))] = root
+                    continue
+                # qmake .pro files
+                pro_files = list(bd.rglob('*.pro'))
+                if pro_files:
+                    pro_sorted = sorted(pro_files, key=lambda p: len(p.parts))
+                    root = pro_sorted[0].parent
+                    unique_qmake_roots[os.path.abspath(str(root))] = root
+                    continue
+                # no project files found directly under this dir; consider bd itself
+            except Exception:
+                continue
+
+        # Now attempt cmake builds for unique roots (once each)
+        for abs_root, root in unique_cmake_roots.items():
+            try:
+                ok, out = try_cmake_build(root)
+                results.append({'test': f'cmake_build:{root}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                if ok:
+                    built_any = True
+            except Exception as e:
+                results.append({'test': f'cmake_build:{root}', 'status': 'FAIL', 'detail': str(e)})
+
+        # Then attempt qmake builds for unique qmake roots
+        for abs_root, root in unique_qmake_roots.items():
+            try:
+                ok, out = try_qmake_build(root)
+                results.append({'test': f'qmake_build:{root}', 'status': 'PASS' if ok else 'FAIL', 'detail': out})
+                if ok:
+                    built_any = True
+            except Exception as e:
+                results.append({'test': f'qmake_build:{root}', 'status': 'FAIL', 'detail': str(e)})
             except Exception:
                 continue
 
@@ -991,6 +1784,104 @@ def ensure_injected_googletest(repo: Path, out_dir: Path = None) -> Path:
         # Write a marker file so reports can show this was injected
         try:
             (injected_dir / 'INJECTED_BY_AGENT').write_text('injected tests: google test scaffold', encoding='utf-8')
+        except Exception:
+            pass
+        return injected_dir
+    except Exception:
+        return None
+
+
+def ensure_injected_doctest(repo: Path, out_dir: Path = None) -> Path:
+    """Inject a tiny doctest-like scaffold into the workspace.
+
+    This creates an `injected_doctest_tests` folder (under `out_dir` or `repo`)
+    with a simple test source and a minimal `CMakeLists.txt`. It also appends
+    generated test entries into `generated_tests.json` in the workspace root so
+    the UI and the generated test runner will pick up and execute the tests.
+    Returns the path to the injected folder or None on failure.
+    """
+    try:
+        target_base = Path(out_dir) if out_dir else Path(repo)
+        injected_dir = target_base / 'injected_doctest_tests'
+        if injected_dir.exists():
+            # ensure generated_tests.json contains entries (idempotent)
+            try:
+                gen_path = target_base / 'generated_tests.json'
+                tests = []
+                if gen_path.exists():
+                    try:
+                        tests = json.loads(gen_path.read_text(encoding='utf-8'))
+                        if not isinstance(tests, list):
+                            tests = []
+                    except Exception:
+                        tests = []
+                # ensure marker test exists
+                names = { (t.get('name') or t.get('test') or t.get('title')) for t in tests }
+                added = False
+                for nm in ('injected:doctest:add_positive','injected:doctest:add_zero','injected:doctest:add_negative'):
+                    if nm not in names:
+                        tests.append({ 'name': nm, 'commands': [f'cmake -S {injected_dir} -B {injected_dir}/build', f'cmake --build {injected_dir}/build -- -j1', str(injected_dir / 'build' / ('injected_doctest.exe' if os.name=='nt' else 'injected_doctest')) ] })
+                        added = True
+                if added:
+                    try:
+                        gen_path.write_text(json.dumps(tests, indent=2, ensure_ascii=False), encoding='utf-8')
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+            return injected_dir
+
+        injected_dir.mkdir(parents=True, exist_ok=True)
+        # write a tiny test source that prints test case lines
+        src = injected_dir / 'injected_doctest.cpp'
+        src.write_text(r'''#include <iostream>
+#include <string>
+int add(int a,int b){return a+b;}
+int main(){
+    int ok=0; int total=0;
+    total++; if(add(1,2)==3){ std::cout<<"TESTCASE: add_positive PASS\n"; ok++; } else { std::cout<<"TESTCASE: add_positive FAIL\n"; }
+    total++; if(add(0,0)==0){ std::cout<<"TESTCASE: add_zero PASS\n"; ok++; } else { std::cout<<"TESTCASE: add_zero FAIL\n"; }
+    total++; if(add(-1,-2)==-3){ std::cout<<"TESTCASE: add_negative PASS\n"; ok++; } else { std::cout<<"TESTCASE: add_negative FAIL\n"; }
+    std::cout<<"SUMMARY: "<<ok<<"/"<<total<<" passed\n";
+    return (ok==total)?0:1;
+}
+''', encoding='utf-8')
+        # Minimal CMakeLists to build the test
+        cm = injected_dir / 'CMakeLists.txt'
+        cm.write_text(r'''cmake_minimum_required(VERSION 3.10)
+project(injected_doctest)
+add_executable(injected_doctest injected_doctest.cpp)
+''', encoding='utf-8')
+
+        # Append generated_tests.json entries into workspace root so run_generated_tests picks them up
+        try:
+            gen_path = target_base / 'generated_tests.json'
+            tests = []
+            if gen_path.exists():
+                try:
+                    tests = json.loads(gen_path.read_text(encoding='utf-8'))
+                    if not isinstance(tests, list):
+                        tests = []
+                except Exception:
+                    tests = []
+            # Add three simple tests referring to the injected executable
+            names = { (t.get('name') or t.get('test') or t.get('title')) for t in tests }
+            added = False
+            for nm in ('injected:doctest:add_positive','injected:doctest:add_zero','injected:doctest:add_negative'):
+                if nm not in names:
+                    tests.append({ 'name': nm, 'commands': [f'cmake -S {injected_dir} -B {injected_dir}/build', f'cmake --build {injected_dir}/build -- -j1', str(injected_dir / 'build' / ('injected_doctest.exe' if os.name=='nt' else 'injected_doctest')) ] })
+                    added = True
+            if added:
+                try:
+                    gen_path.write_text(json.dumps(tests, indent=2, ensure_ascii=False), encoding='utf-8')
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        # write marker
+        try:
+            (injected_dir / 'INJECTED_BY_AGENT').write_text('injected tests: doctest-like scaffold', encoding='utf-8')
         except Exception:
             pass
         return injected_dir
@@ -1686,6 +2577,22 @@ def main():
     except Exception:
         pass
 
+    # When running C++ tests directly, ensure the lightweight doctest scaffold
+    # is injected into the workspace so quick white-box tests exist even when
+    # the project has no unit tests. This mirrors the Flask upload behavior.
+    try:
+        if getattr(args, 'cpp', False):
+            try:
+                from dynamic_tester import ensure_injected_doctest
+                try:
+                    ensure_injected_doctest(CPP_REPO, out_dir=out_dir)
+                except Exception:
+                    pass
+            except Exception:
+                pass
+    except Exception:
+        pass
+
     patch_results, test_results = [], []
 
     # For baseline comparison we run core bug tests BEFORE applying patches,
@@ -1722,7 +2629,29 @@ def main():
         repo_for_generated = Path(CPP_REPO) if args.cpp else Path(PY_REPO)
         # Generate equivalence-class tests and merge with any existing generated tests
         try:
+            # Generate equivalence, boundary and performance tests and merge them
             eq_tests = []
+            try:
+                if args.cpp:
+                    eq_tests = generate_equivalence_tests(repo_for_generated, 'cpp', out_dir)
+                    boundary_tests = generate_boundary_tests(repo_for_generated, 'cpp', out_dir)
+                    perf_tests = generate_performance_tests(repo_for_generated, 'cpp', out_dir)
+                else:
+                    eq_tests = generate_equivalence_tests(repo_for_generated, 'py', out_dir)
+                    boundary_tests = generate_boundary_tests(repo_for_generated, 'py', out_dir)
+                    perf_tests = generate_performance_tests(repo_for_generated, 'py', out_dir)
+            except Exception:
+                boundary_tests = []
+                perf_tests = []
+            # coalesce all synthesized tests
+            synthesized_tests = []
+            if isinstance(eq_tests, list):
+                synthesized_tests.extend(eq_tests)
+            if isinstance(boundary_tests, list):
+                synthesized_tests.extend(boundary_tests)
+            if isinstance(perf_tests, list):
+                synthesized_tests.extend(perf_tests)
+            eq_tests = synthesized_tests
         except Exception:
             eq_tests = []
 
@@ -1762,7 +2691,8 @@ def main():
         # === Generate and integrate DiagramScene functional tests ===
         if args.cpp:  # Only generate for C++ projects
             try:
-                diag_tests = generate_diagramscene_integration_tests(exe_path=str(built_exe) if 'built_exe' in locals() else None, out_dir=out_dir)
+                built_exe = None  # Initialize before use
+                diag_tests = generate_diagramscene_integration_tests(exe_path=str(built_exe) if built_exe else None, out_dir=out_dir)
                 if diag_tests and isinstance(diag_tests, list):
                     # Save to generated_tests_diagramscene.json for reference
                     try:
@@ -1990,6 +2920,64 @@ def main():
         "pre_tests": pre_tests
     }
 
+    # --- Merge any local CTest / injected whitebox JSON results found under out_dir ---
+    try:
+        test_files = list(Path(out_dir).rglob('test_results.json'))
+        merged_files = []
+        for tf in test_files:
+            try:
+                raw = json.loads(tf.read_text(encoding='utf-8'))
+            except Exception:
+                continue
+            # support both {tests: [...]} and plain list formats
+            entries = []
+            if isinstance(raw, dict) and isinstance(raw.get('tests'), list):
+                entries = raw.get('tests')
+            elif isinstance(raw, list):
+                entries = raw
+            else:
+                # Try to coerce single-file structure
+                continue
+
+            for e in entries:
+                try:
+                    name = e.get('name') if isinstance(e, dict) else str(e)
+                    st = (e.get('status') or '').lower() if isinstance(e, dict) else ''
+                    if st in ('passed', 'pass', 'ok'):
+                        status = 'PASS'
+                    elif st in ('failed', 'fail', 'error'):
+                        status = 'FAIL'
+                    elif st in ('skipped', 'skip'):
+                        status = 'SKIPPED'
+                    else:
+                        status = 'PASS' if st == '' else st.upper()
+
+                    detail_parts = []
+                    if isinstance(e, dict) and 'time_s' in e:
+                        try:
+                            detail_parts.append(f"duration: {float(e.get('time_s'))}s")
+                        except Exception:
+                            pass
+                    # include raw entry for traceability
+                    try:
+                        detail_parts.append('raw: ' + json.dumps(e, ensure_ascii=False))
+                    except Exception:
+                        detail_parts.append('raw: <unserializable>')
+
+                    structured.setdefault('tests', []).append({
+                        'test': name,
+                        'status': status,
+                        'detail': '\n'.join(detail_parts),
+                        'source': str(tf)
+                    })
+                except Exception:
+                    continue
+            merged_files.append(str(tf))
+        if merged_files:
+            structured['merged_test_results_files'] = merged_files
+    except Exception:
+        pass
+
     # --- UI-friendly summary generation ---
     def _make_ui_summary(struct):
         tests = struct.get('tests', [])
@@ -2204,6 +3192,29 @@ def main():
             fbj.write_text(json.dumps(structured, indent=2), encoding="utf-8")
         except Exception:
             pass
+
+    # --- Also append this run into the agent-level aggregated JSON report ---
+    try:
+        aggr_path = agent_dir / 'dynamic_analysis_report.json'
+        aggr = {}
+        if aggr_path.exists():
+            try:
+                aggr = json.loads(aggr_path.read_text(encoding='utf-8')) or {}
+            except Exception:
+                aggr = {}
+        runs = aggr.get('runs') if isinstance(aggr.get('runs'), list) else []
+        # attach a workspace/run identifier if out_dir looks like a workspace folder
+        try:
+            ws_ident = str(out_dir)
+            structured_copy = dict(structured)
+            structured_copy['_workspace'] = ws_ident
+        except Exception:
+            structured_copy = structured
+        runs.append(structured_copy)
+        aggr_out = {'runs': runs, 'last_updated': datetime.utcnow().isoformat() + 'Z'}
+        aggr_path.write_text(json.dumps(aggr_out, indent=2), encoding='utf-8')
+    except Exception:
+        pass
 
     # Also write a Markdown and HTML human-friendly report next to the cleaned report
     try:

@@ -1,0 +1,3 @@
+D:/semester5/quality/ai-agent-project/cpp_project/puzzle-2/injected_whitebox_tests/build/_deps/googletest-subbuild/CMakeFiles/googletest-populate.dir
+D:/semester5/quality/ai-agent-project/cpp_project/puzzle-2/injected_whitebox_tests/build/_deps/googletest-subbuild/CMakeFiles/edit_cache.dir
+D:/semester5/quality/ai-agent-project/cpp_project/puzzle-2/injected_whitebox_tests/build/_deps/googletest-subbuild/CMakeFiles/rebuild_cache.dir

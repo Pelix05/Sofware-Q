@@ -61,5 +61,6 @@
   ],
   "files.exclude": {
     "**/venv": true
-  }
+  },
+  "cmake.sourceDirectory": "D:/semester5/quality/ai-agent-project/agent/cpp_tests"
 }

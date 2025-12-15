@@ -1,11 +1,34 @@
 # Dynamic Analysis Report
-Date: 2025-12-12
+Date: 2025-12-15
 
 == TEST EXECUTION ==
-[!] C++ compile ... SKIPPED
- Skipped: host compiler lacks C++17 support. No compiler with C++17 support detected.
-[!] C++ runtime ... SKIPPED
- Skipped runtime tests because host compiler does not support C++17.
+[-] test_puzzle_piece_close_enough ... FAIL
+ Traceback (most recent call last):
+   File "D:\semester5\quality\ai-agent-project\agent\dynamic_tester.py", line 1489, in run_py_bug_tests
+     spec.loader.exec_module(mod)
+     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+   File "<frozen importlib._bootstrap_external>", line 1022, in exec_module
+   File "<frozen importlib._bootstrap_external>", line 1159, in get_code
+   File "<frozen importlib._bootstrap_external>", line 1217, in get_data
+ FileNotFoundError: [Errno 2] No such file or directory: 'D:\\semester5\\quality\\ai-agent-project\\puzzle-challenge\\puzzle_piece.py'
+[-] test_labels_render_text ... FAIL
+ Traceback (most recent call last):
+   File "D:\semester5\quality\ai-agent-project\agent\dynamic_tester.py", line 1489, in run_py_bug_tests
+     spec.loader.exec_module(mod)
+     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+   File "<frozen importlib._bootstrap_external>", line 1022, in exec_module
+   File "<frozen importlib._bootstrap_external>", line 1159, in get_code
+   File "<frozen importlib._bootstrap_external>", line 1217, in get_data
+ FileNotFoundError: [Errno 2] No such file or directory: 'D:\\semester5\\quality\\ai-agent-project\\puzzle-challenge\\labels.py'
+[-] test_puzzle_get_event ... FAIL
+ Traceback (most recent call last):
+   File "D:\semester5\quality\ai-agent-project\agent\dynamic_tester.py", line 1489, in run_py_bug_tests
+     spec.loader.exec_module(mod)
+     ~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+   File "<frozen importlib._bootstrap_external>", line 1022, in exec_module
+   File "<frozen importlib._bootstrap_external>", line 1159, in get_code
+   File "<frozen importlib._bootstrap_external>", line 1217, in get_data
+ FileNotFoundError: [Errno 2] No such file or directory: 'D:\\semester5\\quality\\ai-agent-project\\puzzle-challenge\\puzzle.py'
 [+] Resource Management ... PASS
  Read success: Test
 [+] Concurrency ... PASS
@@ -74,33 +97,11 @@ Date: 2025-12-12
  No executable commands (all lines are comments or empty).
 [!] TC-7.1: Import Visio ... SKIPPED
  No executable commands (all lines are comments or empty).
-[!] TC-1.1: Rectangle Drawing ... SKIPPED
-[!] TC-1.2: Circle Drawing ... SKIPPED
-[!] TC-1.3: Diamond Drawing ... SKIPPED
-[!] TC-1.4: Arrow Drawing ... SKIPPED
-[!] TC-2.1: Element Connection ... SKIPPED
-[!] TC-2.2: Auto Alignment ... SKIPPED
-[!] TC-2.3: Smart Routing ... SKIPPED
-[!] TC-3.1: Element Selection ... SKIPPED
-[!] TC-3.2: Element Movement ... SKIPPED
-[!] TC-3.3: Element Deletion ... SKIPPED
-[!] TC-3.4: Copy/Paste ... SKIPPED
-[!] TC-3.5: Undo/Redo ... SKIPPED
-[!] TC-4.1: Color Settings ... SKIPPED
-[!] TC-4.2: Size Adjustment ... SKIPPED
-[!] TC-4.3: Label Editing ... SKIPPED
-[!] TC-4.4: Shape Type Conversion ... SKIPPED
-[!] TC-5.1: Load Template ... SKIPPED
-[!] TC-5.2: Save as Template ... SKIPPED
-[!] TC-6.1: Export PNG ... SKIPPED
-[!] TC-6.2: Export PDF ... SKIPPED
-[!] TC-6.3: Export SVG ... SKIPPED
-[!] TC-7.1: Import Visio ... SKIPPED
 [-] GUI smoke (AHK) ... FAIL
- $ powershell -NoProfile -ExecutionPolicy Bypass -File d:\semester5\quality\ai-agent-project\agent\cpp_tests\dynamic_test_out\run_ahk.ps1
+ $ powershell -NoProfile -ExecutionPolicy Bypass -File agent\workspaces\manual_run\run_ahk.ps1
  Windows PowerShell
  Copyright (C) Microsoft Corporation. All rights reserved.
  
  Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
  
- The argument 'd:\semester5\quality\ai-agent-project\agent\cpp_tests\dynamic_test_out\run_ahk.ps1' to the -File parameter does not exist. Provide the path to an existing '.ps1' file as an argument to the -File parameter.
+ The argument 'agent\workspaces\manual_run\run_ahk.ps1' to the -File parameter does not exist. Provide the path to an existing '.ps1' file as an argument to the -File parameter.

@@ -60,7 +60,6 @@ body{margin:0;font-family:Inter,system-ui,Segoe UI,Arial;background:linear-gradi
     </div>
 
     <div id="tableCard" class="card">
-        <div style="font-weight:700">Test Case Table</div>
         <div id="tableContent" class="small">No test results yet.</div>
     </div>
 
@@ -116,6 +115,8 @@ function renderResult(res){
     const structuredTests = (res && res.dynamic_structured && Array.isArray(res.dynamic_structured.tests)) ? res.dynamic_structured.tests : [];
     // generated_tests may be an array or an object with `tests` array
     const generatedRaw = (res && res.generated_tests) ? (Array.isArray(res.generated_tests) ? res.generated_tests : (res.generated_tests.tests || [])) : [];
+    // unit_tests merged by Flask (workspace-level unified tests)
+    const unitTests = (res && res.unit_tests && Array.isArray(res.unit_tests)) ? res.unit_tests : [];
 
     const normalize = (t, origin) => {
         // t can have many shapes: {test, status, detail}, {name, result}, or simple strings
@@ -216,32 +217,209 @@ function renderResult(res){
     });
 
     if(all.length){
-        const hasDuration = all.some(r => r.duration_ms && String(r.duration_ms).trim() !== '');
+        // Prefer server-provided ui_summary rows (structured for table display)
+        const uiRows = (res && res.ui_summary && Array.isArray(res.ui_summary.rows)) ? res.ui_summary.rows : null;
         const tbl = document.createElement('table');
         const h = document.createElement('tr');
-        const headers = ['Name','Type','Result'];
-        if(hasDuration) headers.push('Duration');
-        headers.push('Info');
+        // Desired columns: 定义编号、测试类型、输入、预期输出、结果、详情
+        const headers = ['定义编号','测试类型','输入','预期输出','结果','详情'];
         headers.forEach(t => { const th = document.createElement('th'); th.textContent = t; h.appendChild(th); });
         tbl.appendChild(h);
-        all.forEach(row => {
-            const tr = document.createElement('tr');
-            const name = document.createElement('td'); name.textContent = safeText(row.name||'');
-            const type = document.createElement('td');
-            const originPart = row.origin ? (row.origin + ' / ') : '';
-            const typeText = originPart + (row.type||'') + (row.category ? (' ('+row.category+')') : '');
-            type.textContent = safeText(typeText);
-            const rescol = document.createElement('td'); rescol.textContent = safeText(row.result||'');
-            const cells = [name, type, rescol];
-            if(hasDuration){
-                const dur = document.createElement('td'); dur.textContent = row.duration_ms ? (Number(row.duration_ms)/1000).toFixed(2)+'s' : '';
-                cells.push(dur);
-            }
-            const info = document.createElement('td'); info.textContent = safeText(row.info||'');
-            cells.push(info);
-            cells.forEach(n => tr.appendChild(n));
-            tbl.appendChild(tr);
-        });
+
+        if(uiRows){
+            uiRows.forEach(row => {
+                const tr = document.createElement('tr');
+                const namec = document.createElement('td'); namec.textContent = safeText(row.id || row.test || row.title || 'N/A');
+                const typec = document.createElement('td'); typec.textContent = safeText((row.type || row.description || '').toString());
+                const rescol = document.createElement('td'); rescol.textContent = safeText(row.status || row.result || 'N/A');
+                [namec, typec, rescol].forEach(n => tr.appendChild(n));
+                tbl.appendChild(tr);
+            });
+        } else {
+            // fallback to earlier 'all' normalized rows
+            // Build a combined normalized list: structured, generated, and unit_tests
+            const combined = [];
+            structuredTests.forEach(t=>combined.push(normalize(t,'dynamic')));
+            generatedRaw.forEach(t=>combined.push(normalize(t,'generated')));
+            unitTests.forEach(t=>combined.push(normalize(t,'unit')));
+
+            // Build headers for the 3-column table to match content (replace existing header row)
+            const headerRow = h;
+            headerRow.innerHTML = '';
+            ['测试','测试类型','结果/指标'].forEach(label => { const th = document.createElement('th'); th.textContent = label; headerRow.appendChild(th); });
+
+            // dedupe when merging combined items (by normalized name + mapped type)
+            const seenRows = new Set();
+
+            // improved performance info renderer: parse JSON, numeric metrics, or show a short summary
+            const renderPerfInfo = (r) => {
+                try{
+                    // prefer explicit duration metric
+                    if(r.duration_ms) return `Avg: ${Number(r.duration_ms).toFixed(3)} ms`;
+                    const txt = (r.info||'').toString().trim();
+                    if(!txt) return String(r.result || 'N/A');
+
+                    // If the info is JSON PERF_METRICS, parse and format nicely
+                    try{
+                        const obj = JSON.parse(txt);
+                        if(obj && typeof obj === 'object'){
+                            const parts = [];
+                            // what was tested
+                            if(r.name) parts.push(`Test: ${r.name}`);
+                            // runs / count
+                            if(obj.count !== undefined) parts.push(`Runs: ${obj.count}`);
+                            // show measurements array (shorten if long)
+                            if(Array.isArray(obj.measurements_ms)){
+                                const meas = obj.measurements_ms.slice(0,8).join(', ');
+                                parts.push(`Measurements(ms): [${meas}${obj.measurements_ms.length>8? ', ...':''}]`);
+                            }
+                            if(obj.avg_ms !== undefined) parts.push(`Avg: ${Number(obj.avg_ms).toFixed(3)} ms`);
+                            if(obj.min_ms !== undefined) parts.push(`Min: ${obj.min_ms} ms`);
+                            if(obj.max_ms !== undefined) parts.push(`Max: ${obj.max_ms} ms`);
+                            if(obj.throughput_ops_per_s !== undefined) parts.push(`Throughput: ${obj.throughput_ops_per_s} ops/s`);
+                            // include any other numeric hints
+                            const known = new Set(['measurements_ms','count','avg_ms','min_ms','max_ms','throughput_ops_per_s']);
+                            Object.keys(obj).forEach(k=>{
+                                if(!known.has(k)) parts.push(`${k}: ${obj[k]}`);
+                            });
+                            return parts.join(' | ');
+                        }
+                    }catch(e){ /* not JSON, continue to heuristics */ }
+
+                    // fallback: if the text contains PERF_METRICS-like tokens, attempt to extract key numbers
+                    const mAvg = txt.match(/"avg_ms"\s*:\s*(\d+(?:\.\d+)?)/i) || txt.match(/PERF_GEN_MS\s*(\d+(?:\.\d+)?)/i);
+                    const mMin = txt.match(/"min_ms"\s*:\s*(\d+(?:\.\d+)?)/i);
+                    const mMax = txt.match(/"max_ms"\s*:\s*(\d+(?:\.\d+)?)/i);
+                    const mCount = txt.match(/"count"\s*:\s*(\d+)/i);
+                    const parts = [];
+                    if(r.name) parts.push(`Test: ${r.name}`);
+                    if(mCount) parts.push(`Runs: ${mCount[1]}`);
+                    if(mAvg) parts.push(`Avg: ${mAvg[1]} ms`);
+                    if(mMin) parts.push(`Min: ${mMin[1]} ms`);
+                    if(mMax) parts.push(`Max: ${mMax[1]} ms`);
+                    if(parts.length) return parts.join(' | ');
+
+                    // last resort: short trimmed info
+                    const short = txt;
+                    return short.length > 300 ? short.slice(0,300)+'...' : short;
+                }catch(e){ return String(r.result || 'N/A'); }
+            };
+
+            // helper to map type to Chinese labels (性能, 功能, 黑盒, 白盒, 动态, 静态, 其他)
+            const mapTestType = (r) => {
+                const labels = [];
+                try{
+                    const n = (r.name || '').toString().toLowerCase();
+                    const t = (r.type || r.category || '').toString().toLowerCase();
+                    const origin = (r.origin || r.originLabel || '').toString().toLowerCase();
+                    if(t.includes('functional') || t.includes('equiv') || t.includes('equivalence') || n.includes('equiv') || n.includes('function') || n.includes('boundary') || t.includes('boundary') || t.includes('check')) labels.push('功能');
+                    if(n.includes('perf') || t.includes('perf') || n.includes('performance') || t.includes('performance') || n.includes('throughput') || n.includes('latency') || n.includes('stress') || n.includes('benchmark') || t.includes('benchmark') || t.includes('resource')) labels.push('性能');
+                    if((r.category||'').toString().toLowerCase().includes('white') || t.includes('white') || (r.meta||'').toString().toLowerCase().includes('white')) labels.push('白盒');
+                    if((r.category||'').toString().toLowerCase().includes('black') || t.includes('black') || (r.meta||'').toString().toLowerCase().includes('black')) labels.push('黑盒');
+                    if(origin === 'dynamic' || t.includes('dynamic') || (r.category||'').toString().toLowerCase().includes('dynamic')) labels.push('动态');
+                    if(origin === 'static' || t.includes('static') || (r.category||'').toString().toLowerCase().includes('static')) labels.push('静态');
+                }catch(e){}
+                const uniq = [...new Set(labels)];
+                if(uniq.length) return uniq.join(' / ');
+                // Prefer showing any explicit type/category/origin provided rather than a generic label
+                const fallback = (r.type || r.category || r.origin || r.originLabel) ? String(r.type || r.category || r.origin || r.originLabel) : '未分类';
+                return fallback;
+            };
+
+            // Group by normalized test name and merge types/status/metrics
+            const grouped = {};
+            combined.forEach(r => {
+                const nameKey = (r.name||'').toString().trim().toLowerCase();
+                if(!nameKey) return;
+                const mapped = mapTestType(r);
+                if(!grouped[nameKey]){
+                    grouped[nameKey] = {
+                        name: r.name || 'N/A',
+                        types: new Set(),
+                        origins: new Set(),
+                        infos: new Set(),
+                        perfValues: [],
+                        statuses: new Set()
+                    };
+                }
+                const g = grouped[nameKey];
+                // split compound mapped labels like '功能 / 黑盒 / 动态' and add each uniquely
+                try{
+                    mapped.toString().split('/').map(s=>s.trim()).filter(s=>s).forEach(lbl=>g.types.add(lbl));
+                }catch(e){ g.types.add(mapped); }
+                if(r.origin) g.origins.add(r.origin);
+                if(r.info) g.infos.add(r.info);
+                // collect numeric perf: prefer structured JSON in r.info, else fallback to renderPerfInfo
+                try{
+                    const infoTxt = (r.info||'').toString().trim();
+                    if(infoTxt){
+                        try{
+                            const obj = JSON.parse(infoTxt);
+                            if(Array.isArray(obj.measurements_ms)){
+                                obj.measurements_ms.forEach(v=>{ if(typeof v === 'number') g.perfValues.push(Number(v)); });
+                            } else if(obj.avg_ms!==undefined && obj.count!==undefined){
+                                // reconstruct approx measurements from avg
+                                g.perfValues.push(Number(obj.avg_ms));
+                            }
+                        }catch(e){
+                            // fallback: see if renderPerfInfo returns single numeric "measurement: NN"
+                            const perf = renderPerfInfo(r);
+                            if(typeof perf === 'string' && perf.startsWith('measurement:')){
+                                const m = perf.match(/measurement:\s*(\d+\.?\d*)/i);
+                                if(m) g.perfValues.push(Number(m[1]));
+                            }
+                        }
+                    } else {
+                        const perf = renderPerfInfo(r);
+                        if(typeof perf === 'string' && perf.startsWith('measurement:')){
+                            const m = perf.match(/measurement:\s*(\d+\.?\d*)/i);
+                            if(m) g.perfValues.push(Number(m[1]));
+                        }
+                    }
+                }catch(e){}
+                g.statuses.add((r.result||'PENDING').toString().toUpperCase());
+            });
+
+            // Render grouped rows
+            Object.keys(grouped).forEach(k => {
+                const g = grouped[k];
+                const typeLabel = Array.from(g.types).join(' / ');
+                // Determine combined status precedence: FAIL > SKIPPED > PENDING > PASS
+                let finalStatus = 'PASS';
+                if(Array.from(g.statuses).includes('FAIL')) finalStatus = 'FAIL';
+                else if(Array.from(g.statuses).includes('SKIPPED')) finalStatus = 'SKIPPED';
+                else if(Array.from(g.statuses).includes('PENDING')) finalStatus = 'PENDING';
+
+                const tr = document.createElement('tr');
+                const namec = document.createElement('td'); namec.textContent = safeText(g.name || 'N/A');
+                const typec = document.createElement('td'); typec.textContent = safeText(typeLabel || '其他');
+                const rescol = document.createElement('td');
+
+                if(typeLabel.indexOf('性能') !== -1 && g.perfValues.length){
+                    // show count / avg / min / max
+                    const sum = g.perfValues.reduce((a,b)=>a+b,0);
+                    const cnt = g.perfValues.length;
+                    const avg = (sum/cnt).toFixed(2);
+                    const min = Math.min(...g.perfValues);
+                    const max = Math.max(...g.perfValues);
+                    rescol.textContent = `measurement count: ${cnt}, avg: ${avg} ms, min: ${min} ms, max: ${max} ms`;
+                } else {
+                    // prefer showing FAIL/SKIPPED/PASS and a short info snippet
+                    const infoSnippet = Array.from(g.infos)[0] || '';
+                    rescol.textContent = finalStatus + (infoSnippet ? (' — ' + (infoSnippet.length>160?infoSnippet.slice(0,160)+'...':infoSnippet)) : '');
+                }
+
+                // attach a small details tooltip combining infos
+                if(g.infos.size){
+                    const details = Array.from(g.infos).slice(0,8).join('\n---\n');
+                    rescol.title = details.length > 0 ? details : '';
+                }
+
+                [namec, typec, rescol].forEach(n => tr.appendChild(n));
+                tbl.appendChild(tr);
+            });
+        }
+
         tableContent.innerHTML = ''; tableContent.appendChild(tbl);
         // hide white/black boxes if table contains test cases
         const wb = document.getElementById('whiteBox');
@@ -275,7 +453,30 @@ function renderResult(res){
 
     // analysis summaries (show full static result if available)
     try{
-        if(res && res.static_full){
+        // Prefer structured static results when available (cppcheck + clang-tidy)
+        if(res && res.static_structured){
+            try{
+                const s = res.static_structured;
+                const parts = [];
+                if(s.cppcheck){
+                    parts.push(`cppcheck: ${s.cppcheck.issue_count || 0} issues`);
+                }
+                if(s.clang_tidy){
+                    parts.push(`clang-tidy: ${s.clang_tidy.issue_count || 0} issues`);
+                }
+                let out = 'Static analysis summary:\n' + parts.join(' | ') + '\n\n';
+                // show top lines from each raw report (first 30 lines)
+                if(s.cppcheck && s.cppcheck.raw){
+                    const lines = (s.cppcheck.raw||'').toString().split('\n').filter(Boolean).slice(0,30);
+                    out += '--- cppcheck (top) ---\n' + (lines.join('\n') || '(no output)') + '\n\n';
+                }
+                if(s.clang_tidy && s.clang_tidy.raw){
+                    const lines2 = (s.clang_tidy.raw||'').toString().split('\n').filter(Boolean).slice(0,30);
+                    out += '--- clang-tidy (top) ---\n' + (lines2.join('\n') || '(no output)') + '\n\n';
+                }
+                staticBody.textContent = out;
+            }catch(e){ staticBody.textContent = res.static_full || res.static || 'No static results.'; }
+        } else if(res && res.static_full){
             staticBody.textContent = res.static_full;
         } else if(res && (res.static || res.static_summary && res.static_summary.raw)){
             staticBody.textContent = (res.static || (res.static_summary && res.static_summary.raw));
@@ -292,26 +493,32 @@ function renderResult(res){
 
     lastUpdated.textContent = new Date().toLocaleString();
 
-    // Show a short static summary line above the detailed static output so
-    // users see the error count at a glance while still seeing full details.
+    // Inline full static analysis when available (avoid short header noise)
     try{
-        let shortSummary = '';
-        if(res && res.ui_left && res.ui_left.static) shortSummary = res.ui_left.static;
-        else if(res && res.white_box && res.white_box.summary) shortSummary = res.white_box.summary;
-        else if(res && res.static_summary && res.static_summary.raw){
-            // try to extract a concise first-line summary
-            const lines = String(res.static_summary.raw||'').split('\n');
-            shortSummary = lines[0] || '';
-        }
-        const full = res && (res.static_full || res.static || (res.static_summary && res.static_summary.raw)) ? (res.static_full || res.static || (res.static_summary && res.static_summary.raw)) : '';
-        if(shortSummary){
-            staticBody.textContent = shortSummary + '\n\n' + (full || '');
-        } else if(full){
-            staticBody.textContent = full;
+        if(res && res.static_full){
+            staticBody.textContent = res.static_full;
+        } else if(res && (res.static || (res.static_summary && res.static_summary.raw))){
+            staticBody.textContent = res.static || (res.static_summary && res.static_summary.raw);
         } else {
             staticBody.textContent = 'No static results.';
         }
     }catch(e){ staticBody.textContent = 'No static results.'; }
+
+    // Prepend a concise numeric summary (total + per-tool) when available
+    try{
+        let cppCount = 0, tidyCount = 0, totalCount = null;
+        if(res && res.static_structured){
+            try{ cppCount = Number((res.static_structured.cppcheck && res.static_structured.cppcheck.issue_count) || 0); }catch(e){ cppCount = 0; }
+            try{ tidyCount = Number((res.static_structured.clang_tidy && res.static_structured.clang_tidy.issue_count) || 0); }catch(e){ tidyCount = 0; }
+            totalCount = (typeof res.static_count !== 'undefined' && res.static_count !== null) ? Number(res.static_count) : (cppCount + tidyCount);
+        } else if(res && typeof res.static_count !== 'undefined'){
+            totalCount = Number(res.static_count) || 0;
+        }
+        if(totalCount !== null){
+            const summaryLine = ` Static Issues: ${cppCount}\n\n`;
+            staticBody.textContent = summaryLine + (staticBody.textContent || '');
+        }
+    }catch(e){ /* ignore */ }
 }
 
 async function pollStatus(ws){
