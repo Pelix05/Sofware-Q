@@ -122,6 +122,13 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(
                             <div class="panel-body small" style="flex:1;overflow:auto">Black-box summary will appear here.</div>
                         </div>
                     </div>
+
+                    <div style="margin-top:12px;">
+                        <div id="unitTestBox" class="analysis-panel" style="padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:160px;overflow:auto;display:flex;flex-direction:column;">
+                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Unit Tests</div>
+                            <div class="panel-body small" style="flex:1;overflow:auto">Unit test results will appear here.</div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -270,6 +277,12 @@ function renderResult(res){
                 white.details.forEach(d=> html += '<li style="margin-bottom:6px">'+escapeHtml(d)+'</li>');
                 html += '</ul>';
             }
+             // ✅ 新增：在 White-box 中也显示单元测试摘要
+            if(white.unit_tests && white.unit_tests.status === 'completed'){
+                html += '<div style="margin-top:8px;padding:6px;border-radius:6px;background:rgba(126,243,182,0.06)">';
+                html += '<div style="font-size:12px;color:#7ef3b6;font-weight:700">Unit Tests: ' + escapeHtml(white.unit_tests.summary) + '</div>';
+                html += '</div>';
+            }
             if(white.usability && (white.usability.suggestions || white.usability.readme_exists!==undefined)){
                 html += '<div style="margin-top:8px;color:var(--muted);font-size:12px">';
                 if(white.usability.readme_exists!==undefined) html += 'README: ' + (white.usability.readme_exists ? 'present' : 'missing') + '<br/>';
@@ -291,6 +304,36 @@ function renderResult(res){
                 html += '<div style="margin-top:8px;color:var(--muted);font-size:12px">Generated tests: ' + (black.generated_tests_count||0) + '</div>';
             }
             bbBody.innerHTML = html;
+        }
+    }catch(e){ /* non-fatal */ }
+    // ✅ 新增：渲染单元测试结果
+    try{
+        const unitTestBox = document.getElementById('unitTestBox');
+        const utBody = unitTestBox && unitTestBox.querySelector('.panel-body');
+        const unitTests = res.unit_tests || (res.white_box && res.white_box.unit_tests) || null;
+        
+        if(utBody){
+            if(unitTests && unitTests.status === 'completed'){
+                let html = '<div style="font-weight:700;color:#7ef3b6">✅ ' + escapeHtml(unitTests.summary || 'Tests passed') + '</div>';
+                html += '<div style="margin-top:8px;display:flex;gap:16px;font-size:12px;color:var(--muted)">';
+                html += '<div>Total: <span style="color:#dfe9ff;font-weight:700">' + (unitTests.total || 0) + '</span></div>';
+                html += '<div>Passed: <span style="color:#7ef3b6;font-weight:700">' + (unitTests.passed || 0) + '</span></div>';
+                html += '<div>Failed: <span style="color:#ffb4b4;font-weight:700">' + (unitTests.failed || 0) + '</span></div>';
+                html += '<div>Pass Rate: <span style="color:#dfe9ff;font-weight:700">' + (unitTests.pass_rate || 0) + '%</span></div>';
+                html += '</div>';
+                if(unitTests.log_file){
+                    html += '<div style="margin-top:8px"><a href="/workspaces/' + encodeURIComponent(res.workspace || '') + '/' + escapeHtml(unitTests.log_file) + '" target="_blank" style="color:var(--accent);text-decoration:none;font-size:12px">📄 View Test Log</a></div>';
+                }
+                utBody.innerHTML = html;
+            } else if(unitTests && unitTests.status === 'skipped'){
+                utBody.innerHTML = '<div style="color:var(--muted)">⚠️ ' + escapeHtml(unitTests.summary || 'Unit tests were skipped') + '</div>';
+            } else if(unitTests && unitTests.status === 'failed'){
+                utBody.innerHTML = '<div style="color:#ffb4b4">❌ ' + escapeHtml(unitTests.summary || 'Unit tests failed') + '</div>';
+            } else if(unitTests && unitTests.status === 'error'){
+                utBody.innerHTML = '<div style="color:#ffb4b4">⚠️ ' + escapeHtml(unitTests.summary || 'Unit test error') + '</div>';
+            } else {
+                utBody.innerHTML = '<div style="color:var(--muted)">Unit test results not available</div>';
+            }
         }
     }catch(e){ /* non-fatal */ }
     // Prefer structured UI table if provided by backend

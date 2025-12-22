@@ -23,7 +23,14 @@ import threading
 import json
 
 # Configure simple logging to the console for debugging upload requests
-logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s %(message)s')
+logging.basicConfig(
+    level=logging.DEBUG,  # 改为 DEBUG 级别
+    format='[%(asctime)s] %(levelname)s [%(name)s.%(funcName)s:%(lineno)d] %(message)s',
+    handlers=[
+        logging.StreamHandler(),  # 控制台输出
+        logging.FileHandler('flask_app_debug.log', encoding='utf-8')  # 文件输出
+    ]
+)
 logger = logging.getLogger(__name__)
 import uuid
 
@@ -341,8 +348,170 @@ def upload_file_route():
             # initial queued status
             write_status(ws_path, status='Processing', progress=2, message='Queued')
 
+            # ✅ 新增：初始化单元测试结果变量
+            unit_test_summary = None
+
+            # ===== 新增：构建并运行单元测试 =====
+            try:
+                logger.info("[BG] Starting unit tests...")
+                write_status(ws_path, status='Processing', progress=10, message='Building unit tests')
+                
+                test_dir = AGENT_DIR / 'cpp_tests'
+                if not test_dir.exists():
+                    logger.warning('cpp_tests directory not found at %s', test_dir)
+                    unit_test_summary = {'status': 'skipped', 'reason': 'Test directory not found'}
+                    write_status(ws_path, status='Processing', progress=15, message='Unit tests skipped')
+                else:
+                    # 查找用户上传的源码位置
+                    source_dir = None
+                    target_path = Path(target)
+                    
+                    search_candidates = [
+                        target_path / 'qt_src' / 'utnubu_source' / 'diagramscene_ultima',
+                        target_path / 'utnubu_source' / 'diagramscene_ultima',
+                        target_path / 'diagramscene_ultima',
+                        target_path,
+                    ]
+                    
+                    for candidate in search_candidates:
+                        if candidate.exists() and (candidate / 'diagramitem.cpp').exists():
+                            source_dir = candidate.resolve()
+                            logger.info('Found uploaded source at: %s', source_dir)
+                            break
+                    
+                    if not source_dir:
+                        logger.warning('Cannot find diagramitem.cpp in uploaded files')
+                        unit_test_summary = {'status': 'skipped', 'reason': 'Source files not found'}
+                        write_status(ws_path, status='Processing', progress=15, message='Unit tests skipped')
+                    else:
+                        # 配置环境变量
+                        build_env = os.environ.copy()
+                        build_env['CPP_SOURCE_DIR'] = str(source_dir)
+                        
+                        # CMake 配置
+                        build_dir = test_dir / 'build'
+                        build_dir.mkdir(exist_ok=True)
+                        
+                        logger.info('Configuring unit tests: CPP_SOURCE_DIR=%s', build_env['CPP_SOURCE_DIR'])
+                        write_status(ws_path, status='Processing', progress=12, message='Configuring CMake')
+                        
+                        try:
+                            config_proc = subprocess.run(
+                                ['cmake', '-S', str(test_dir), '-B', str(build_dir), '-G', 'MinGW Makefiles'],
+                                env=build_env,
+                                capture_output=True,
+                                text=True,
+                                timeout=120,
+                                cwd=str(test_dir)
+                            )
+                            cmake_config_out = (config_proc.stdout or '') + '\n' + (config_proc.stderr or '')
+                            (ws_path / 'unit_test_cmake_config.log').write_text(cmake_config_out, encoding='utf-8')
+                            
+                            if config_proc.returncode != 0:
+                                logger.error('CMake configuration failed')
+                                unit_test_summary = {
+                                    'status': 'failed',
+                                    'stage': 'cmake_config',
+                                    'log_file': 'unit_test_cmake_config.log'
+                                }
+                                write_status(ws_path, status='Processing', progress=15, message='CMake config failed')
+                            else:
+                                # CMake 构建
+                                write_status(ws_path, status='Processing', progress=18, message='Building unit tests')
+                                logger.info('Building unit tests')
+                                
+                                build_proc = subprocess.run(
+                                    ['cmake', '--build', str(build_dir), '-j', '4'],
+                                    env=build_env,
+                                    capture_output=True,
+                                    text=True,
+                                    timeout=300,
+                                    cwd=str(test_dir)
+                                )
+                                cmake_build_out = (build_proc.stdout or '') + '\n' + (build_proc.stderr or '')
+                                (ws_path / 'unit_test_cmake_build.log').write_text(cmake_build_out, encoding='utf-8')
+                                
+                                if build_proc.returncode != 0:
+                                    logger.error('CMake build failed')
+                                    unit_test_summary = {
+                                        'status': 'failed',
+                                        'stage': 'cmake_build',
+                                        'log_file': 'unit_test_cmake_build.log'
+                                    }
+                                    write_status(ws_path, status='Processing', progress=20, message='CMake build failed')
+                                else:
+                                    # 运行 ctest
+                                    write_status(ws_path, status='Processing', progress=25, message='Running unit tests')
+                                    logger.info('Running ctest')
+                                    
+                                    try:
+                                        ctest_proc = subprocess.run(
+                                            ['ctest', '--test-dir', str(build_dir), '--output-on-failure'],
+                                            env=build_env,
+                                            capture_output=True,
+                                            text=True,
+                                            timeout=180,
+                                            cwd=str(test_dir)
+                                        )
+                                        ctest_output = (ctest_proc.stdout or '') + '\n' + (ctest_proc.stderr or '')
+                                        (ws_path / 'unit_test_results.txt').write_text(ctest_output, encoding='utf-8')
+                                        
+                                        # 解析 ctest 结果
+                                        import re
+                                        total_match = re.search(r'(\d+)% tests passed, (\d+) tests failed out of (\d+)', ctest_output)
+                                        if total_match:
+                                            pass_rate = int(total_match.group(1))
+                                            failed = int(total_match.group(2))
+                                            total = int(total_match.group(3))
+                                            passed = total - failed
+                                            
+                                            unit_test_summary = {
+                                                'status': 'completed',
+                                                'total': total,
+                                                'passed': passed,
+                                                'failed': failed,
+                                                'pass_rate': pass_rate,
+                                                'summary': f'{passed}/{total} tests passed ({pass_rate}%)',
+                                                'log_file': 'unit_test_results.txt'
+                                            }
+                                            logger.info('Unit tests completed: %s', unit_test_summary['summary'])
+                                        else:
+                                            unit_test_summary = {
+                                                'status': 'unknown',
+                                                'reason': 'Cannot parse ctest output',
+                                                'log_file': 'unit_test_results.txt'
+                                            }
+                                            logger.warning('Cannot parse ctest output')
+                                            
+                                    except subprocess.TimeoutExpired:
+                                        logger.error('ctest execution timeout')
+                                        unit_test_summary = {'status': 'timeout', 'reason': 'Test execution exceeded time limit'}
+                                    except Exception as ctest_err:
+                                        logger.exception('Failed to run ctest: %s', ctest_err)
+                                        unit_test_summary = {'status': 'error', 'reason': str(ctest_err)}
+                        
+                        except subprocess.TimeoutExpired:
+                            logger.error('CMake configuration timeout')
+                            unit_test_summary = {'status': 'timeout', 'reason': 'CMake configuration timeout'}
+                        except Exception as cmake_err:
+                            logger.exception('CMake configuration error: %s', cmake_err)
+                            unit_test_summary = {'status': 'error', 'reason': str(cmake_err)}
+            
+            except Exception as unit_err:
+                logger.exception('Unit test build/run failed: %s', unit_err)
+                unit_test_summary = {'status': 'error', 'reason': str(unit_err)}
+                write_status(ws_path, status='Processing', progress=20, message='Unit tests error')
+
             # Run static analysis (non-iterative)
+            logger.info("[BG] DiagramScene test generation completed")  # ← 已有
+            
+            # ✅ 添加：确认即将执行静态分析
+            logger.info("[BG] ========== STATIC ANALYSIS START ==========")
+            write_status(ws_path, status='Processing', progress=48, message='Running static analysis')
+            logger.info("[BG] Calling analyzer_cpp.py...")
             static_out = run_command(f"py -3 -u analyzer_cpp.py --repo-dir \"{target}\"", cwd=AGENT_DIR)
+            logger.info("[BG] analyzer_cpp.py completed, output length: %d", len(static_out or ''))
+            logger.info("[BG] ========== STATIC ANALYSIS COMPLETED ==========")
 
             # For Experiment 2 we do not apply or archive agent patches; keep
             # the workspace focused on analysis only. Leave archived list empty.
@@ -451,7 +620,6 @@ def upload_file_route():
                 diag_tests = generate_diagramscene_tests(exe_path=None, out_dir=Path(ws_path))
                 if diag_tests:
                     # Save to generated_tests_diagramscene.json
-                    import json
                     diag_json_path = Path(ws_path) / "generated_tests_diagramscene.json"
                     diag_json_path.write_text(json.dumps(diag_tests, indent=2), encoding='utf-8')
                     logger.info('Generated %d DiagramScene functional tests for %s', len(diag_tests), ws_id)
@@ -536,6 +704,7 @@ def upload_file_route():
                 "documentation_checks": documentation,
                 "suggested_patches": [],
                 "archived_agent_patches": archived_list,
+                "unit_tests": unit_test_summary,
             }
             # Attach generated HF tests if present
             try:
@@ -574,6 +743,23 @@ def upload_file_route():
             # --- UI left-bottom concise summary ---
             # Build a compact, human-friendly summary for the UI (left-bottom)
             ui_left = {'static': '', 'dynamic': ''}
+
+             # ✅ 新增：添加单元测试摘要
+            try:
+                if unit_test_summary:
+                    if unit_test_summary.get('status') == 'completed':
+                        ui_left['unit_tests'] = f"Unit Tests: {unit_test_summary['passed']}/{unit_test_summary['total']} passed ({unit_test_summary['pass_rate']}%)"
+                    elif unit_test_summary.get('status') == 'skipped':
+                        ui_left['unit_tests'] = f"Unit Tests: Skipped ({unit_test_summary.get('reason', 'N/A')})"
+                    elif unit_test_summary.get('status') == 'failed':
+                        ui_left['unit_tests'] = f"Unit Tests: Failed at {unit_test_summary.get('stage', 'unknown stage')}"
+                    else:
+                        ui_left['unit_tests'] = f"Unit Tests: {unit_test_summary.get('status', 'unknown')}"
+                else:
+                    ui_left['unit_tests'] = 'Unit Tests: N/A'
+            except Exception:
+                ui_left['unit_tests'] = 'Unit Tests: Error'
+                
             try:
                 # Static: prefer workspace-local static report if present
                 static_txt = ''
@@ -645,6 +831,33 @@ def upload_file_route():
                     'details': ui_left.get('static_details', []) if isinstance(ui_left, dict) else [],
                     'usability': {}
                 }
+
+                # ✅ 新增：添加单元测试结果到 white_box
+                if unit_test_summary:
+                    if unit_test_summary.get('status') == 'completed':
+                        white_box['unit_tests'] = {
+                            'status': 'completed',
+                            'summary': f"{unit_test_summary['passed']}/{unit_test_summary['total']} tests passed ({unit_test_summary['pass_rate']}%)",
+                            'total': unit_test_summary['total'],
+                            'passed': unit_test_summary['passed'],
+                            'failed': unit_test_summary['failed'],
+                            'pass_rate': unit_test_summary['pass_rate'],
+                            'log_file': unit_test_summary.get('log_file')
+                        }
+                    else:
+                        # 跳过、失败或错误状态
+                        white_box['unit_tests'] = {
+                            'status': unit_test_summary.get('status', 'unknown'),
+                            'summary': unit_test_summary.get('reason', 'Unit tests not available'),
+                            'log_file': unit_test_summary.get('log_file')
+                        }
+                else:
+                    white_box['unit_tests'] = {
+                        'status': 'not_run',
+                        'summary': 'Unit tests were not executed'
+                    }
+
+
                 if isinstance(usability, dict):
                     white_box['usability'] = {
                         'readme_exists': bool(usability.get('readme_exists')),
@@ -673,6 +886,20 @@ def upload_file_route():
             except Exception:
                 result['white_box'] = {'summary': 'N/A', 'details': []}
                 result['black_box'] = {'summary': 'N/A', 'failures': []}
+            
+            # ✅ 新增：添加单元测试日志到 logs 字段
+            if 'logs' not in result:
+                result['logs'] = {}
+            
+            if (ws_path / 'unit_test_cmake_config.log').exists():
+                result['logs']['unit_test_config'] = 'unit_test_cmake_config.log'
+            if (ws_path / 'unit_test_cmake_build.log').exists():
+                result['logs']['unit_test_build'] = 'unit_test_cmake_build.log'
+            if (ws_path / 'unit_test_results.txt').exists():
+                result['logs']['unit_test_results'] = 'unit_test_results.txt'
+
+            with open(ws_path / 'result.json', 'w', encoding='utf-8') as fh:
+                json.dump(result, fh, ensure_ascii=False, indent=2)
 
             with open(ws_path / 'result.json', 'w', encoding='utf-8') as fh:
                 json.dump(result, fh, ensure_ascii=False, indent=2)
