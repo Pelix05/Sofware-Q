@@ -106,29 +106,15 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(
                             <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Static</div>
                             <div class="panel-body small" style="flex:1;overflow:auto">Results will appear here.</div>
                         </div>
-                        <div id="dynamicContent" class="analysis-panel code" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:300px;overflow:auto;display:flex;flex-direction:column;">
-                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Dynamic</div>
-                            <div class="panel-body small" style="flex:1;overflow:auto">Runtime results will appear here.</div>
-                        </div>
                     </div>
-                    <!-- White-box and Black-box summaries -->
-                    <div style="margin-top:12px;display:flex;gap:10px;align-items:stretch;">
-                        <div id="whiteBox" class="analysis-panel" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:160px;overflow:auto;display:flex;flex-direction:column;">
-                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">White-box</div>
-                            <div class="panel-body small" style="flex:1;overflow:auto">White-box summary will appear here.</div>
-                        </div>
-                        <div id="blackBox" class="analysis-panel" style="flex:1;padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:160px;overflow:auto;display:flex;flex-direction:column;">
-                            <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Black-box</div>
-                            <div class="panel-body small" style="flex:1;overflow:auto">Black-box summary will appear here.</div>
-                        </div>
-                    </div>
-
+                    <!-- Simplified: hide White-box/Black-box panels and keep Static then Unit Tests in place -->
                     <div style="margin-top:12px;">
-                        <div id="unitTestBox" class="analysis-panel" style="padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:160px;overflow:auto;display:flex;flex-direction:column;">
+                        <div id="unitTestBox" class="analysis-panel" style="padding:10px;border-radius:8px;background:rgba(255,255,255,0.01);max-height:260px;overflow:auto;display:flex;flex-direction:column;">
                             <div class="panel-title" style="font-weight:700;margin-bottom:6px;font-size:13px">Unit Tests</div>
                             <div class="panel-body small" style="flex:1;overflow:auto">Unit test results will appear here.</div>
                         </div>
                     </div>
+                    <div id="leftSummary" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
                 </div>
 
             </div>
@@ -168,7 +154,6 @@ const progressBar = document.getElementById('progressBar');
 const progressText = document.getElementById('progressText');
 const wsInfo = document.getElementById('wsInfo');
 const staticContent = document.getElementById('staticContent');
-const dynamicContent = document.getElementById('dynamicContent');
 const tableContent = document.getElementById('tableContent');
 const summaryBadge = document.getElementById('summaryBadge');
 const lastUpdated = document.getElementById('lastUpdated');
@@ -197,10 +182,17 @@ async function pollStatus(ws){
             setProgress(100,'Complete');
             summaryBadge.className = 'badge pass'; summaryBadge.textContent = 'Complete';
             lastUpdated.textContent = new Date().toLocaleString();
-            // fetch result
+            // fetch full (truncated) result explicitly to avoid large payloads on frequent polls
             setTimeout(async ()=>{
-                const res = sd.result || sd;
-                renderResult(res);
+                try{
+                    const r2 = await fetch('/status?ws=' + encodeURIComponent(ws) + '&include_result=1');
+                    const rd = await r2.json();
+                    const res = rd.result || rd;
+                    renderResult(res);
+                }catch(e){
+                    // fallback to any result embedded in status
+                    try{ const res = sd.result || sd; renderResult(res);}catch(_){}
+                }
             }, 500);
             return true;
         }
@@ -227,85 +219,40 @@ function escapeHtml(unsafe){
 function renderResult(res){
     if(!res) return;
     wsInfo.textContent = res.workspace || 'workspace';
-    // populate static/dynamic panels using compact `ui_left` if available
+    // Populate static panel with a concise static-summary: tool header, total issues and top issue lines
     const statBody = staticContent.querySelector('.panel-body');
-    const dynBody = dynamicContent.querySelector('.panel-body');
-    const ui_left = res.ui_left || (res.dynamic_structured && res.dynamic_structured.ui_summary && res.dynamic_structured.ui_summary.ui_left) || null;
-    if(ui_left){
-        const shtml = [];
-        shtml.push('<div style="font-weight:700;margin-bottom:6px">' + escapeHtml(ui_left.static || 'Static: N/A') + '</div>');
-        if(ui_left.static_details && Array.isArray(ui_left.static_details) && ui_left.static_details.length){
-            shtml.push('<ul style="margin:6px 0 0 16px;padding:0;color:var(--muted);font-size:13px">');
-            ui_left.static_details.forEach(it => shtml.push('<li style="margin-bottom:6px">' + escapeHtml(it) + '</li>'));
-            shtml.push('</ul>');
-        } else {
-            shtml.push('<div style="color:var(--muted);font-size:13px">No prominent static issues detected.</div>');
-        }
-        if(statBody){ statBody.innerHTML = shtml.join('\n'); } else { const d = document.createElement('div'); d.className = 'panel-body small'; d.innerHTML = shtml.join('\n'); staticContent.appendChild(d); }
+    const staticRaw = (res.static && (typeof res.static === 'string' ? res.static : (res.static.cppcheck || res.static.raw || ''))) || (res.static_summary && res.static_summary.raw) || '';
 
-        const dhtml = [];
-        dhtml.push('<div style="font-weight:700;margin-bottom:6px">' + escapeHtml(ui_left.dynamic || 'Dynamic: N/A') + '</div>');
-        if(ui_left.dynamic_failures && Array.isArray(ui_left.dynamic_failures) && ui_left.dynamic_failures.length){
-            dhtml.push('<div style="color:#ffb4b4;font-size:13px;margin-top:6px">Failing tests:</div>');
-            dhtml.push('<ul style="margin:6px 0 0 16px;padding:0">');
-            ui_left.dynamic_failures.forEach(it => dhtml.push('<li style="margin-bottom:6px;color:#ffb4b4">' + escapeHtml(it) + '</li>'));
-            dhtml.push('</ul>');
-        } else {
-            dhtml.push('<div style="color:var(--muted);font-size:13px">No failing runtime tests detected.</div>');
-        }
-        if(dynBody){ dynBody.innerHTML = dhtml.join('\n'); } else { const d2 = document.createElement('div'); d2.className = 'panel-body small'; d2.innerHTML = dhtml.join('\n'); dynamicContent.appendChild(d2); }
-    } else {
-        // fallback: raw outputs
-        if(statBody){ statBody.innerHTML = highlight(res.static || res.static_analysis || 'No static output'); }
-        else { const d = document.createElement('div'); d.className = 'panel-body small'; d.innerHTML = highlight(res.static || res.static_analysis || 'No static output'); staticContent.appendChild(d); }
-
-        if(dynBody){ dynBody.innerHTML = highlight(res.dynamic || res.dynamic_analysis || 'No dynamic output'); }
-        else { const d2 = document.createElement('div'); d2.className = 'panel-body small'; d2.innerHTML = highlight(res.dynamic || res.dynamic_analysis || 'No dynamic output'); dynamicContent.appendChild(d2); }
-    }
-    // Populate White-box and Black-box panels
     try{
-        const whiteBox = document.getElementById('whiteBox');
-        const blackBox = document.getElementById('blackBox');
-        const wbBody = whiteBox && whiteBox.querySelector('.panel-body');
-        const bbBody = blackBox && blackBox.querySelector('.panel-body');
-        const white = res.white_box || {};
-        const black = res.black_box || {};
-        if(wbBody){
-            let html = '<div style="font-weight:700">' + escapeHtml(white.summary || 'White-box: N/A') + '</div>';
-            if(Array.isArray(white.details) && white.details.length){
-                html += '<ul style="margin:6px 0 0 16px;padding:0;color:var(--muted);font-size:13px">';
-                white.details.forEach(d=> html += '<li style="margin-bottom:6px">'+escapeHtml(d)+'</li>');
-                html += '</ul>';
+        if(statBody){
+            if(staticRaw && staticRaw.trim()){
+                // Extract first line as tool header and try to find a "Found <N>" pattern
+                const firstLine = (staticRaw.split(/\r?\n/)[0] || '').trim();
+                const foundMatch = staticRaw.match(/Found\s+(\d+)\s+/i) || staticRaw.match(/Found:\s*(\d+)/i);
+                const issueCount = foundMatch ? Number(foundMatch[1]) : null;
+                // Separate errors and warnings and present counts + samples
+                const allLines = staticRaw.split(/\r?\n/);
+                // filter out noisy traceback / runtime messages that are not analyzer findings
+                const noiseRe = /\b(Traceback|raise\s+|TypeError|JSON serializable|Object of type)\b/i;
+                const fileIssueRe = /([^\s:]+\.(?:cpp|cc|c|hpp|hh|h))(?:[:\(]\d+)?/i;
+                const issueTokenRe = /\b(error|warning|fatal|undefined reference)\b/i;
+                const errorLines = allLines.filter(l => !noiseRe.test(l) && (fileIssueRe.test(l) || issueTokenRe.test(l) && /[:\\/]/.test(l)) && /error|fatal|undefined reference/i.test(l));
+                const warningLines = allLines.filter(l => !noiseRe.test(l) && (fileIssueRe.test(l) || issueTokenRe.test(l) && /[:\\/]/.test(l)) && /warning/i.test(l));
+
+                let html = '<div style="font-weight:700;margin-bottom:6px">Static Analysis</div>';
+                if(firstLine) html += '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">' + escapeHtml(firstLine) + '</div>';
+                // Do not display numeric counts in the Static panel; show generic label
+                html += '<div style="margin-bottom:8px;color:var(--muted);font-size:12px">Static Analysis</div>';
+
+                // Show counts and the full static report; avoid duplicating 'top' lists
+                statBody.innerHTML = html + '<div style="font-weight:700;margin-top:10px;margin-bottom:6px">Full Static Report</div>' +
+                    '<pre class="card code small" style="max-height:240px;overflow:auto;margin-top:6px;white-space:pre-wrap;">' + escapeHtml(staticRaw) + '</pre>';
+            } else {
+                statBody.innerHTML = '<div style="color:var(--muted)">No static analysis output available.</div>';
             }
-             // ✅ 新增：在 White-box 中也显示单元测试摘要
-            if(white.unit_tests && white.unit_tests.status === 'completed'){
-                html += '<div style="margin-top:8px;padding:6px;border-radius:6px;background:rgba(126,243,182,0.06)">';
-                html += '<div style="font-size:12px;color:#7ef3b6;font-weight:700">Unit Tests: ' + escapeHtml(white.unit_tests.summary) + '</div>';
-                html += '</div>';
-            }
-            if(white.usability && (white.usability.suggestions || white.usability.readme_exists!==undefined)){
-                html += '<div style="margin-top:8px;color:var(--muted);font-size:12px">';
-                if(white.usability.readme_exists!==undefined) html += 'README: ' + (white.usability.readme_exists ? 'present' : 'missing') + '<br/>';
-                if(white.usability.suggestions && white.usability.suggestions.length){
-                    html += 'Tips: ' + escapeHtml(white.usability.suggestions.join(' | '));
-                }
-                html += '</div>';
-            }
-            wbBody.innerHTML = html;
         }
-        if(bbBody){
-            let html = '<div style="font-weight:700">' + escapeHtml(black.summary || 'Black-box: N/A') + '</div>';
-            if(Array.isArray(black.failures) && black.failures.length){
-                html += '<div style="color:#ffb4b4;margin-top:6px">Failing tests:</div><ul style="margin:6px 0 0 16px;padding:0">';
-                black.failures.forEach(f=> html += '<li style="margin-bottom:6px;color:#ffb4b4">'+escapeHtml(f)+'</li>');
-                html += '</ul>';
-            }
-            if(black.generated_tests_count!==undefined){
-                html += '<div style="margin-top:8px;color:var(--muted);font-size:12px">Generated tests: ' + (black.generated_tests_count||0) + '</div>';
-            }
-            bbBody.innerHTML = html;
-        }
-    }catch(e){ /* non-fatal */ }
+    }catch(e){ console.warn('Static render failed', e); }
+    // White-box / Black-box panels removed per UI simplification.
     // ✅ 新增：渲染单元测试结果
     try{
         const unitTestBox = document.getElementById('unitTestBox');
@@ -336,19 +283,206 @@ function renderResult(res){
             }
         }
     }catch(e){ /* non-fatal */ }
-    // Prefer structured UI table if provided by backend
+    // Populate compact left-side summary (static count + perf short)
     try{
-        let ui = res.ui_html || (res.dynamic_structured && res.dynamic_structured.ui_summary && res.dynamic_structured.ui_summary.ui_html);
-        if(ui){
-            tableContent.innerHTML = ui;
-        } else if(res.ui_summary && res.ui_summary.ui_html){
-            tableContent.innerHTML = res.ui_summary.ui_html;
-        } else {
-            tableContent.innerHTML = '<pre class="small">' + escapeHtml(JSON.stringify({static:res.static, dynamic:res.dynamic}, null, 2)) + '</pre>';
+        const leftSummary = document.getElementById('leftSummary');
+            if(leftSummary){
+            const ui_left = res.ui_left || {};
+            const staticText = ui_left.static || '';
+            const perfText = ui_left.perf || '';
+            let ls = '';
+            // show a non-numeric static label instead of counts
+            if(staticText) ls += '<div style="font-weight:700;margin-bottom:4px">Static Analysis</div>';
+            if(perfText) ls += '<div style="color:var(--muted);font-size:12px">' + escapeHtml(perfText) + '</div>';
+            if(!ls) ls = '<div style="color:var(--muted)">No summary available</div>';
+            leftSummary.innerHTML = ls;
         }
-    }catch(e){
-        tableContent.innerHTML = '<pre class="small">' + escapeHtml(JSON.stringify(res, null, 2)) + '</pre>';
-    }
+    }catch(e){ /* ignore */ }
+    // Build consolidated test list and render table with Number, Name, Type, Priority, Status
+    try{
+        const tests = [];
+        // 1) Unit tests summary as one entry (White-box)
+        const unitTests = res.unit_tests || (res.white_box && res.white_box.unit_tests) || null;
+        if(unitTests){
+            const status = (unitTests.status === 'completed') ? 'PASS' : (unitTests.status || 'N/A');
+            const failed = unitTests.failed || 0;
+            const total = unitTests.total || 0;
+            const name = 'Unit Tests Summary';
+            const priority = (failed>0) ? 'High' : ((total>0) ? 'Medium' : 'Low');
+            tests.push({name, type: 'White-box (Unit)', priority, status: status, details: unitTests});
+        }
+        // 2) Dynamic structured tests if available
+        if(res.dynamic_structured && Array.isArray(res.dynamic_structured.tests)){
+            res.dynamic_structured.tests.forEach(t => {
+                const name = t.test || t.name || 'Unnamed Test';
+                const st = (t.status||'').toString().toUpperCase() || 'N/A';
+                const pr = t.priority || (st==='FAIL' ? 'High' : (st==='PASS' ? 'Medium' : 'Low'));
+                tests.push({name, type: 'Black-box (Dynamic)', priority: pr, status: st});
+            });
+        }
+        // 3) Generated tests (functional)
+        if(res.generated_tests){
+            try{
+                const g = Array.isArray(res.generated_tests) ? res.generated_tests : (res.generated_tests.tests || []);
+                (g || []).forEach((t, idx) => {
+                    const name = t.test || t.name || ('Generated Test ' + (idx+1));
+                    tests.push({name, type: 'Functional (Generated)', priority: t.priority || 'Low', status: (t.status||'N/A').toString().toUpperCase()});
+                });
+            }catch(e){ }
+        }
+        // 4) Static issues as separate rows (take top N lines that look like issues)
+        const staticTxt = (res.static) || (res.static_summary && res.static_summary.raw) || '';
+        if(staticTxt){
+            const sLines = staticTxt.split(/\r?\n/).filter(l => {
+                const noiseRe = /\b(Traceback|raise\s+|TypeError|JSON serializable|Object of type)\b/i;
+                const fileIssueRe = /([^\s:]+\.(?:cpp|cc|c|hpp|hh|h))(?:[:\(]\d+)?/i;
+                const issueTokenRe = /\b(error|warning|fatal|undefined reference)\b/i;
+                if(noiseRe.test(l)) return false;
+                if(fileIssueRe.test(l)) return true;
+                if(issueTokenRe.test(l) && /[:\\/]/.test(l)) return true;
+                return false;
+            });
+                for(let i=0;i<Math.min(10,sLines.length);i++){
+                const ln = sLines[i].trim();
+                const name = ln.split(/[:\-]/).slice(0,3).join(' ').slice(0,120) || ('Static issue ' + (i+1));
+                tests.push({name, type: 'Static (Analysis)', priority: 'High', status: 'N/A', details: ln});
+            }
+        }
+        // 5) Perf report: expose multiple perf metrics as separate test rows
+        if(res.perf){
+            try{
+                const pf = res.perf;
+                if(pf.cpu_bench_ms != null){
+                    tests.push({name: 'CPU micro-bench (median): ' + (Math.round(pf.cpu_bench_ms*10)/10) + ' ms', type: 'Performance', priority: 'Medium', status: 'N/A'});
+                }
+                if(pf.cpu_bench_runs_ms && Array.isArray(pf.cpu_bench_runs_ms)){
+                    tests.push({name: 'CPU micro-bench runs: ' + pf.cpu_bench_runs_ms.map(v=>Math.round(v)).join(', ') + ' ms', type: 'Performance', priority: 'Low', status: 'N/A'});
+                }
+                if(pf.mt_cpu_bench_ms != null){
+                    tests.push({name: 'Multi-thread CPU (4 threads): ' + (Math.round(pf.mt_cpu_bench_ms*10)/10) + ' ms', type: 'Performance', priority: 'Medium', status: 'N/A'});
+                }
+                if(pf.io_benchmark){
+                    const io = pf.io_benchmark;
+                    tests.push({name: 'I/O write median: ' + (io.write_ms_median ? Math.round(io.write_ms_median*10)/10 + ' ms' : 'N/A'), type: 'Performance', priority: 'Low', status: 'N/A'});
+                    tests.push({name: 'I/O read median: ' + (io.read_ms_median ? Math.round(io.read_ms_median*10)/10 + ' ms' : 'N/A'), type: 'Performance', priority: 'Low', status: 'N/A'});
+                }
+                if(pf.alloc_benchmark && pf.alloc_benchmark.alloc_ms != null){
+                    tests.push({name: 'Allocation micro-bench: ' + (Math.round(pf.alloc_benchmark.alloc_ms*10)/10) + ' ms', type: 'Performance', priority: 'Low', status: 'N/A'});
+                }
+                if(pf.mem_usage_kb != null){
+                    tests.push({name: 'Memory RSS: ' + (Math.round((pf.mem_usage_kb/1024.0)*10)/10) + ' MB (' + (pf.mem_usage_kb||0) + ' KB)', type: 'Performance', priority: 'Low', status: 'N/A'});
+                }
+            }catch(e){ /* ignore */ }
+        }
+
+        // Remove duplicates and ensure no empty rows/columns
+        const finalTests = [];
+        const seen = new Set();
+        tests.forEach(t => {
+            const key = (t.name||'') + '|' + (t.type||'') + '|' + (t.status||'');
+            if(!key.trim()) return;
+            if(!seen.has(key)){
+                seen.add(key);
+                finalTests.push({
+                    name: t.name || 'N/A',
+                    type: t.type || 'N/A',
+                    priority: t.priority || 'N/A',
+                    status: t.status || 'N/A'
+                });
+            }
+        });
+
+        // Render table with numbering and no empty cells
+            if(finalTests.length){
+            let html = '<table><thead><tr><th style="width:6%">#</th><th style="width:46%">Test Case</th><th style="width:18%">Type</th><th style="width:15%">Priority</th><th style="width:15%">Status</th></tr></thead><tbody>';
+            finalTests.forEach((t, i) => {
+                html += '<tr>';
+                html += '<td>' + (i+1) + '</td>';
+                html += '<td>' + escapeHtml(t.name || 'N/A') + '</td>';
+                html += '<td>' + escapeHtml(t.type || 'N/A') + '</td>';
+                html += '<td>' + escapeHtml(t.priority || 'N/A') + '</td>';
+                html += '<td>' + escapeHtml(t.status || 'N/A') + '</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            // build perf summary HTML if present (user-friendly labels)
+            let perfHtml = '';
+            let perfDetailsHtml = '';
+            try{
+                if(res.perf){
+                    const pf = res.perf;
+                    const kbToMb = (kb) => (kb ? Math.round((kb/1024.0)*10)/10 : null);
+                    const rows = [];
+                    if(pf.cpu_bench_ms != null) rows.push(['CPU (median)', Math.round(pf.cpu_bench_ms*10)/10 + ' ms']);
+                    if(pf.cpu_bench_runs_ms && Array.isArray(pf.cpu_bench_runs_ms)) rows.push(['CPU (runs)', pf.cpu_bench_runs_ms.map(v=>Math.round(v)).join(', ') + ' ms']);
+                    if(pf.mt_cpu_bench_ms != null) rows.push(['Multi-thread CPU', Math.round(pf.mt_cpu_bench_ms*10)/10 + ' ms']);
+                    if(pf.io_benchmark){ const io = pf.io_benchmark; rows.push(['I/O write (median)', io.write_ms_median!=null ? Math.round(io.write_ms_median*10)/10 + ' ms' : 'N/A']); rows.push(['I/O read (median)', io.read_ms_median!=null ? Math.round(io.read_ms_median*10)/10 + ' ms' : 'N/A']); }
+                    if(pf.alloc_benchmark && pf.alloc_benchmark.alloc_ms != null) rows.push(['Alloc time', Math.round(pf.alloc_benchmark.alloc_ms*10)/10 + ' ms']);
+                    if(pf.mem_usage_kb != null) rows.push(['Memory RSS', (kbToMb(pf.mem_usage_kb) !== null ? (kbToMb(pf.mem_usage_kb) + ' MB') : '') + ' (' + (pf.mem_usage_kb||'') + ' KB)']);
+                    if(pf.load_test){ const lt = pf.load_test || {}; rows.push(['Load test', (lt.requests||0) + ' reqs, conc ' + (lt.concurrency||0) + ', avg ' + (lt.avg_latency_ms!=null ? (Math.round(lt.avg_latency_ms*10)/10 + ' ms') : 'N/A') + ', success ' + (lt.success||0)]); }
+                    // render as compact key/value list
+                    perfHtml = '<div style="font-weight:700;margin-bottom:6px">Performance Summary</div><div class="panel-body small" style="background:rgba(255,255,255,0.01);padding:10px;border-radius:6px;margin-bottom:8px;">';
+                    rows.forEach(r => { perfHtml += '<div style="display:flex;justify-content:space-between;gap:12px"><div style="color:var(--muted);font-size:12px">' + escapeHtml(r[0]) + '</div><div style="font-weight:700">' + escapeHtml(r[1]) + '</div></div>'; });
+                    perfHtml += '</div>';
+
+                    // Detailed per-executable results (from perf.results) shown above the table
+                    if(pf.results && typeof pf.results === 'object'){
+                        perfDetailsHtml = '<div style="font-weight:700;margin-bottom:6px">Detailed Performance (per executable)</div>';
+                        Object.keys(pf.results).forEach(exeName => {
+                            const ex = pf.results[exeName] || {};
+                            perfDetailsHtml += '<div style="margin-bottom:8px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01)">';
+                            perfDetailsHtml += '<div style="font-weight:700;margin-bottom:6px">' + escapeHtml(exeName) + '</div>';
+                            // benchmark
+                            if(ex.benchmark){
+                                const b = ex.benchmark;
+                                perfDetailsHtml += '<div style="display:flex;gap:12px;margin-bottom:6px"><div style="color:var(--muted);font-size:12px">Benchmark</div><div style="font-weight:700">' + (b.cpu_bench_ms!=null ? (Math.round(b.cpu_bench_ms*10)/10 + ' ms') : 'N/A') + '</div></div>';
+                            }
+                            // concurrency
+                            if(ex.concurrency){
+                                const c = ex.concurrency;
+                                perfDetailsHtml += '<div style="display:flex;gap:12px;margin-bottom:6px"><div style="color:var(--muted);font-size:12px">Concurrency</div><div style="font-weight:700">' + (c.cpu_bench_ms!=null ? (Math.round(c.cpu_bench_ms*10)/10 + ' ms') : 'N/A') + '</div></div>';
+                            }
+                            // load steps
+                            if(ex.load && ex.load.steps){
+                                perfDetailsHtml += '<div style="font-weight:700;margin-bottom:4px">Load Steps</div><div style="max-height:120px;overflow:auto;margin-bottom:6px">';
+                                ex.load.steps.slice(0,20).forEach(s => {
+                                    const sum = s.summary || {};
+                                    const val = sum.cpu_bench_ms!=null ? (Math.round(sum.cpu_bench_ms*10)/10 + ' ms') : (sum.cpu_bench_runs_ms ? sum.cpu_bench_runs_ms.map(v=>Math.round(v)).join(', ') + ' ms' : (s.error||'N/A'));
+                                    perfDetailsHtml += '<div style="display:flex;justify-content:space-between;gap:12px"><div style="color:var(--muted);font-size:12px">Concurrency ' + escapeHtml(String(s.concurrency)) + '</div><div style="font-weight:700">' + escapeHtml(String(val)) + '</div></div>';
+                                });
+                                perfDetailsHtml += '</div>';
+                            }
+                            // stress
+                            if(ex.stress && ex.stress.attempts){
+                                perfDetailsHtml += '<div style="font-weight:700;margin-top:6px">Stress Attempts</div>';
+                                const concl = ex.stress.conclusion || '';
+                                perfDetailsHtml += '<div style="color:var(--muted);font-size:12px;margin-bottom:6px">' + escapeHtml(concl) + '</div>';
+                            }
+                            // soak
+                            if(ex.soak){
+                                const so = ex.soak;
+                                perfDetailsHtml += '<div style="font-weight:700;margin-top:6px">Soak</div>';
+                                perfDetailsHtml += '<div style="color:var(--muted);font-size:12px">duration: ' + escapeHtml(String(so.duration_s || so.duration || 'N/A')) + 's, failures: ' + escapeHtml(String(so.failures || 0)) + ', median: ' + escapeHtml(String(so.median_latency_ms || 'N/A')) + ' ms</div>';
+                            }
+                            perfDetailsHtml += '</div>';
+                        });
+                    }
+                }
+            }catch(e){ perfHtml=''; perfDetailsHtml=''; }
+                    tableContent.innerHTML = perfDetailsHtml + perfHtml + html;
+        } else {
+            // if no tests, still try to show perf or raw ui but avoid empty placeholders
+                    if(res.perf){
+                        const perfPre = (perfDetailsHtml || '') + perfHtml + '<div style="margin-bottom:8px;font-weight:700">Performance Report</div><pre class="small">' + escapeHtml(JSON.stringify(res.perf, null, 2)) + '</pre>';
+                        tableContent.innerHTML = perfPre;
+            } else if(res.ui_html || (res.ui_summary && res.ui_summary.ui_html)){
+                tableContent.innerHTML = res.ui_html || res.ui_summary.ui_html;
+            } else {
+                tableContent.innerHTML = '<div style="color:var(--muted)">No test cases detected.</div>';
+            }
+        }
+    }catch(e){ console.warn('Table render failed', e); }
+    // end renderResult
 }
 
 uploadBtn.addEventListener('click', async ()=>{

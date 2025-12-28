@@ -388,9 +388,16 @@ def upload_file_route():
                         build_env = os.environ.copy()
                         build_env['CPP_SOURCE_DIR'] = str(source_dir)
                         
-                        # CMake 配置
-                        build_dir = test_dir / 'build'
-                        build_dir.mkdir(exist_ok=True)
+                        # CMake 配置 - use a unique, per-upload build dir to ensure
+                        # unit tests are rebuilt each time a new workspace is uploaded.
+                        build_dir = test_dir / 'build' / ws_id
+                        # remove any previous build for this workspace to force a fresh build
+                        if build_dir.exists():
+                            try:
+                                shutil.rmtree(build_dir)
+                            except Exception:
+                                pass
+                        build_dir.mkdir(parents=True, exist_ok=True)
                         
                         logger.info('Configuring unit tests: CPP_SOURCE_DIR=%s', build_env['CPP_SOURCE_DIR'])
                         write_status(ws_path, status='Processing', progress=12, message='Configuring CMake')
@@ -531,6 +538,26 @@ def upload_file_route():
                 path_parts.append(msys2_path)
             if qt_bin and Path(qt_bin).exists():
                 path_parts.append(qt_bin)
+
+            # Run lightweight performance tests and attach perf_report.json to workspace
+            try:
+                write_status(ws_path, status='Processing', progress=55, message='Running project perf tests')
+                # Run project-focused performance runner which builds the uploaded project
+                perf_cmd = f"py -3 -u perf_project_runner.py --project \"{target}\" --out perf_report.json --runs 3 --concurrency 1 --modes all --max-concurrency 16 --soak-duration 60 --soak-concurrency 2"
+                perf_out = run_command(perf_cmd, cwd=AGENT_DIR)
+                if perf_out:
+                    static_out = (static_out or '') + "\n\n" + perf_out
+                # ensure perf_report.json is visible inside the workspace root so
+                # it will be attached to result.json consistently.
+                try:
+                    src_perf = Path(target) / 'perf_report.json'
+                    dst_perf = ws_path / 'perf_report.json'
+                    if src_perf.exists():
+                        shutil.copy2(src_perf, dst_perf)
+                except Exception:
+                    pass
+            except Exception:
+                pass
             # Common defaults (only add if they exist). Prefer detected Qt 6.10.1 if present.
             if not path_parts:
                 default_msys = Path(r'C:\msys64\mingw64\bin')
@@ -653,12 +680,36 @@ def upload_file_route():
             except Exception as _e:
                 dyn_out = f"[Error] failed to launch dynamic tester: {_e}"
 
+            # Run static analysis (cppcheck) and write the verbose report into agent/analysis_report_cpp.txt
+            try:
+                write_status(ws_path, status='Processing', progress=50, message='Running static analysis (cppcheck)')
+                # Run analyzer against the uploaded project's cpp_project directory so each
+                # workspace gets its own verbose report. Use the analyzer script directly
+                # and pass --repo-dir pointing to the uploaded project.
+                try:
+                    analyzer_cmd = f'py -3 -u analyzer_cpp.py --repo-dir "{target}"'
+                    _out = run_command(analyzer_cmd, cwd=AGENT_DIR)
+                except Exception:
+                    _out = None
+                # prefer the analyzer output file if present, otherwise fallback to captured output
+                try:
+                    static_out = (AGENT_DIR / 'analysis_report_cpp.txt').read_text(encoding='utf-8', errors='ignore')
+                except Exception:
+                    static_out = (static_out or '') + '\n' + (_out or '')
+            except Exception:
+                pass
+
             # Copy static analysis report into workspace so each workspace is self-contained.
             static_report_src = AGENT_DIR / 'analysis_report_cpp.txt'
             static_report_dst = ws_path / 'analysis_report_cpp.txt'
             try:
                 if static_report_src.exists():
                     shutil.copy2(static_report_src, static_report_dst)
+                    # prefer workspace-local static report text for UI/result payload
+                    try:
+                        static_out = (ws_path / 'analysis_report_cpp.txt').read_text(encoding='utf-8', errors='ignore')
+                    except Exception:
+                        pass
             except Exception as _e:
                 logger.warning("Failed to copy static report to workspace %s: %s", ws_id, _e)
 
@@ -767,33 +818,72 @@ def upload_file_route():
                     static_txt = (ws_path / 'analysis_report_cpp.txt').read_text(encoding='utf-8', errors='ignore')
                 elif static_out:
                     static_txt = static_out
-                # Extract key summary: look for 'Found N' pattern or 'error-level' mention
+                # Clean the static report: remove progress/checking lines and compute counts
                 static_count = None
                 top_issues = []
+                cleaned_lines = []
                 if static_txt:
-                    m = re.search(r'Found\s+(\d+)\s+C/C\+\+\s+error-level', static_txt)
-                    if not m:
-                        m = re.search(r'Found\s+(\d+)\s+error', static_txt, re.IGNORECASE)
-                    if m:
-                        static_count = int(m.group(1))
-                    # grab first few lines that look like issues (contain 'error' or 'warning')
                     for ln in static_txt.splitlines():
-                        if len(top_issues) >= 3:
-                            break
-                        if 'error' in ln.lower() or 'fatal' in ln.lower() or 'warning' in ln.lower():
-                            clean = ln.strip()
-                            if clean and clean not in top_issues:
-                                top_issues.append(clean)
-                if static_count is not None:
-                    ui_left['static'] = f"Static: {static_count} C/C++ error-level issues"
+                        s = ln.strip()
+                        # skip cppcheck progress / checking lines
+                        if s.startswith('Checking '):
+                            continue
+                        if re.match(r'^\d+\/\d+ files checked', s):
+                            continue
+                        if re.search(r'\bfiles checked\b|% done$', s):
+                            continue
+                        # skip generated/build files (moc/qrc/build/release/debug paths)
+                        if re.search(r'[\\/](?:build|release|debug)[\\/]', s, flags=re.IGNORECASE):
+                            continue
+                        if re.search(r'\bmoc_\w+\.cpp\b', s, flags=re.IGNORECASE):
+                            continue
+                        if re.search(r'\bqrc_\w+\.cpp\b', s, flags=re.IGNORECASE):
+                            continue
+                        cleaned_lines.append(s)
+
+                    # count errors / warnings from cleaned lines
+                    err_re = re.compile(r'\berror\b|preprocessorErrorDirective|syntaxError|unknownMacro', re.IGNORECASE)
+                    warn_re = re.compile(r'\bwarning\b', re.IGNORECASE)
+                    errors = 0
+                    warnings = 0
+                    for ln in cleaned_lines:
+                        if err_re.search(ln):
+                            errors += 1
+                        elif warn_re.search(ln):
+                            warnings += 1
+                        # collect a few top issue lines for the UI
+                        if len(top_issues) < 6 and (err_re.search(ln) or warn_re.search(ln)):
+                            if ln not in top_issues:
+                                top_issues.append(ln)
+
+                    static_count = errors
+
+                    # write a cleaned report into the workspace so the UI shows it
+                    try:
+                        cleaned_text = '\n'.join(cleaned_lines)
+                        (ws_path / 'analysis_report_cpp.txt').write_text(cleaned_text, encoding='utf-8')
+                    except Exception:
+                        pass
+
+                    # IMPORTANT: replace result's static fields with the cleaned text
+                    # so counts and UI reflect filtered (non-generated) issues.
+                    try:
+                        if 'result' in locals() and isinstance(result, dict):
+                            result.setdefault('static_summary', {})
+                            result['static_summary']['raw'] = cleaned_text
+                            result['static_summary']['length'] = len(cleaned_text)
+                            # Backwards-compat top-level `static` field
+                            result['static'] = cleaned_text
+                    except Exception:
+                        pass
+
+                # Set UI summary
+                if static_txt:
+                    ui_left['static'] = f"Static: {static_count or 0} errors, {warnings} warnings"
+                    if top_issues:
+                        ui_left['static_details'] = top_issues[:3]
                 else:
-                    # fallback: provide short summary with bytes/lines
-                    if static_txt:
-                        ui_left['static'] = f"Static: {min(len(static_txt.splitlines()), 5)} lines of findings"
-                    else:
-                        ui_left['static'] = 'Static: no report'
-                if top_issues:
-                    ui_left['static_details'] = top_issues
+                    ui_left['static'] = 'Static: no report'
             except Exception:
                 ui_left['static'] = 'Static: N/A'
 
@@ -898,8 +988,70 @@ def upload_file_route():
             if (ws_path / 'unit_test_results.txt').exists():
                 result['logs']['unit_test_results'] = 'unit_test_results.txt'
 
-            with open(ws_path / 'result.json', 'w', encoding='utf-8') as fh:
-                json.dump(result, fh, ensure_ascii=False, indent=2)
+            # Attach perf report if present
+            try:
+                perf_j = ws_path / 'perf_report.json'
+                if perf_j.exists():
+                    try:
+                        pf = json.loads(perf_j.read_text(encoding='utf-8'))
+                        result['perf'] = pf
+                        # add a compact summary for the left UI panel
+                        try:
+                            ui_left = result.get('ui_left', {})
+                            perf_parts = []
+                            if pf.get('cpu_bench_ms') is not None:
+                                perf_parts.append(f"cpu {round(pf.get('cpu_bench_ms'),1)} ms")
+                            if pf.get('mem_usage_kb') is not None:
+                                perf_parts.append(f"mem {int(pf.get('mem_usage_kb'))} KB")
+                            lt = pf.get('load_test') or {}
+                            if lt.get('requests'):
+                                avg = lt.get('avg_latency_ms')
+                                if avg is not None:
+                                    perf_parts.append(f"load avg {round(avg,1)} ms")
+                            if perf_parts:
+                                ui_left['perf'] = 'Perf: ' + ', '.join(perf_parts)
+                            result['ui_left'] = ui_left
+                        except Exception:
+                            pass
+                    except Exception:
+                        pass
+            except Exception:
+                pass
+
+            # Before writing the final result.json compute filtered static counts
+            try:
+                ss_raw = ''
+                try:
+                    ss_raw = (ws_path / 'analysis_report_cpp.txt').read_text(encoding='utf-8', errors='ignore')
+                except Exception:
+                    ss_raw = result.get('static_summary', {}).get('raw', '') or result.get('static', '') or ''
+
+                # compute counts from the cleaned static text
+                import re as _re
+                lines = [ln for ln in (ss_raw or '').splitlines() if ln.strip()]
+                err_re = _re.compile(r'\berror\b|preprocessorErrorDirective|syntaxError|unknownMacro', _re.IGNORECASE)
+                warn_re = _re.compile(r'\bwarning\b', _re.IGNORECASE)
+                info_re = _re.compile(r'\binformation\b', _re.IGNORECASE)
+                errors = sum(1 for l in lines if err_re.search(l))
+                warnings = sum(1 for l in lines if warn_re.search(l))
+                informations = sum(1 for l in lines if info_re.search(l))
+
+                # attach counts and a mismatch flag (compare to previously stored summary if present)
+                prev_summary = result.get('static_summary', {})
+                prev_raw = prev_summary.get('raw') if isinstance(prev_summary, dict) else None
+                prev_errors = None
+                try:
+                    if isinstance(prev_raw, str):
+                        prev_errors = sum(1 for l in prev_raw.splitlines() if err_re.search(l))
+                except Exception:
+                    prev_errors = None
+
+                result['static_counts'] = {'errors': errors, 'warnings': warnings, 'information': informations, 'lines': len(lines)}
+                result['static_count_mismatch'] = (prev_errors is not None and prev_errors != errors)
+
+            except Exception:
+                # best-effort only; do not fail finalization
+                pass
 
             with open(ws_path / 'result.json', 'w', encoding='utf-8') as fh:
                 json.dump(result, fh, ensure_ascii=False, indent=2)
@@ -913,6 +1065,47 @@ def upload_file_route():
             except Exception as _e:
                 logger.warning("Failed to create submission package: %s", _e)
             # finalize
+            # Ensure any perf_report generated under the project or workspace is merged into result.json
+            try:
+                perf_candidates = [ws_path / 'perf_report.json', Path(target) / 'perf_report.json', AGENT_DIR / 'perf_report.json']
+                perf_loaded = None
+                for ppath in perf_candidates:
+                    try:
+                        if ppath and ppath.exists():
+                            perf_loaded = json.loads(ppath.read_text(encoding='utf-8'))
+                            logger.info('Merging perf from %s into result.json', ppath)
+                            break
+                    except Exception:
+                        continue
+                if perf_loaded is not None:
+                    # load existing result.json (if present) and merge perf key
+                    try:
+                        resf = ws_path / 'result.json'
+                        if resf.exists():
+                            cur = json.loads(resf.read_text(encoding='utf-8'))
+                        else:
+                            cur = result
+                        cur['perf'] = perf_loaded
+                        # update ui_left compact summary
+                        try:
+                            ui_left = cur.get('ui_left', {}) or {}
+                            perf_parts = []
+                            if perf_loaded.get('cpu_bench_ms') is not None:
+                                perf_parts.append(f"cpu {round(perf_loaded.get('cpu_bench_ms'),1)} ms")
+                            if perf_loaded.get('mem_usage_kb') is not None:
+                                perf_parts.append(f"mem {int(perf_loaded.get('mem_usage_kb'))} KB")
+                            if perf_parts:
+                                ui_left['perf'] = 'Perf: ' + ', '.join(perf_parts)
+                                cur['ui_left'] = ui_left
+                        except Exception:
+                            pass
+                        with open(ws_path / 'result.json', 'w', encoding='utf-8') as fh:
+                            json.dump(cur, fh, ensure_ascii=False, indent=2)
+                    except Exception as _e:
+                        logger.warning('Failed to merge perf into result.json: %s', _e)
+            except Exception:
+                pass
+
             write_status(ws_path, status='Done', progress=100, message='Complete')
 
             logger.info("[BG] Finished processing workspace %s", ws_id)
@@ -1005,10 +1198,41 @@ def status_route():
     if status_json.exists():
         try:
             data = json.loads(status_json.read_text(encoding='utf-8'))
-            # If done, include result when available
+            # By default return only status/progress to avoid reading large result.json into memory.
+            # Include full (but truncated) result only when client requests ?include_result=1
+            include_res = str(request.args.get('include_result', '')).lower() in ('1', 'true', 'yes')
             if str(data.get('status', '')).lower() in ('done', 'complete') and result_file.exists():
-                res = json.loads(result_file.read_text(encoding='utf-8'))
-                return jsonify({**data, 'result': res})
+                if not include_res:
+                    # return status only (client can request full result explicitly)
+                    return jsonify(data)
+                # load result but truncate large text blobs to avoid MemoryError
+                try:
+                    with open(result_file, 'r', encoding='utf-8') as rf:
+                        res = json.load(rf)
+                    # fields that can be very large: static_summary.raw, dynamic_raw, dynamic_text
+                    def _truncate_field(d, key, limit=2000):
+                        try:
+                            if key in d and isinstance(d[key], str) and len(d[key]) > limit:
+                                d[key] = d[key][:limit] + '\n...<truncated>...'
+                        except Exception:
+                            pass
+                    if isinstance(res, dict):
+                        _truncate_field(res.get('static_summary', {}), 'raw', 2000)
+                        _truncate_field(res, 'dynamic_raw', 2000)
+                        _truncate_field(res, 'dynamic_text', 2000)
+                        # Also truncate any top-level large lists/strings conservatively
+                        try:
+                            if 'ui_html' in res and isinstance(res['ui_html'], str) and len(res['ui_html']) > 20000:
+                                res['ui_html'] = res['ui_html'][:20000] + '\n...<truncated>...'
+                        except Exception:
+                            pass
+                    return jsonify({**data, 'result': res})
+                except MemoryError:
+                    logger.exception('MemoryError loading result.json for %s', ws)
+                    return jsonify({**data, 'result': {'error': 'result too large to load'}})
+                except Exception:
+                    # fallback: just return status when result cannot be loaded
+                    return jsonify(data)
             return jsonify(data)
         except Exception:
             pass

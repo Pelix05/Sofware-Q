@@ -27,11 +27,15 @@ def analyze_cpp(repo_dir: str = None):
         cpp_repo = BASE_DIR / "cpp_project"
     print("[*] Running C++ analysis (cppcheck + optional clang-tidy)...")
 
-    # cppcheck focus on warnings, performance, portability
-    output1 = run_command(
-        "cppcheck --enable=warning,performance,portability --inconclusive --quiet --force . 2>&1",
-        cwd=cpp_repo,
-    )
+    # Run cppcheck with a verbose configuration on each upload so the
+    # full report is attached to the workspace. Use --enable=all to
+    # surface all checks and include the message id in a compact template.
+    # Use double quotes for the template so Windows `cmd.exe` handles it
+    # correctly (single quotes are not recognized by cmd). Remove shell
+    # redirection; `run_command` captures stdout/stderr.
+    cpp_cmd = 'cppcheck --enable=all --inconclusive --force --template="{file}:{line}: {severity}: {id}: {message}" .'
+    # Ensure cwd passed as string to subprocess.run on Windows
+    output1 = run_command(cpp_cmd, cwd=str(cpp_repo))
 
     # clang-tidy (optional, if compile_commands.json exists)
     tidy_file = cpp_repo / "compile_commands.json"
@@ -39,31 +43,48 @@ def analyze_cpp(repo_dir: str = None):
     if tidy_file.exists():
         output2 = run_command("clang-tidy **/*.cpp -- -std=c++17", cwd=cpp_repo)
 
-    return output1 + "\n" + output2
+    combined = output1 + "\n" + output2
+
+    # Server-side filtering: remove noisy/generated/build files to reduce UI noise.
+    def _filter_report(text: str) -> str:
+        import re
+        out_lines = []
+        for ln in text.splitlines():
+            # Skip entries that are clearly from build folders or generated moc/qrc files
+            if re.search(r'[\\/](?:build|release|debug)[\\/]', ln, flags=re.IGNORECASE):
+                continue
+            if re.search(r'\bmoc_\w+\.cpp\b', ln, flags=re.IGNORECASE):
+                continue
+            if re.search(r'\bqrc_\w+\.cpp\b', ln, flags=re.IGNORECASE):
+                continue
+            out_lines.append(ln)
+        return '\n'.join(out_lines)
+
+    filtered = _filter_report(combined)
+    return filtered
 
 
 def extract_snippets(report_content):
-    # Extract only error-level C++ issues (avoid warnings). We keep
-    # snippets limited to messages that explicitly contain 'error',
-    # 'fatal error' or 'undefined reference' to focus fixes on real bugs.
+    # Extract error and warning level C/C++ issues. We now include
+    # both errors and warnings so the UI can surface warnings as well.
     lines = report_content.splitlines()
-    error_hits = []
+    issue_hits = []
     for ln in lines:
         s = ln.strip()
         # match typical cppcheck/clang output like file.cpp:123: error: ...
         m = re.match(r"^([^\s:]+\.(?:cpp|cc|c|hpp|hh|h)):(\d+):.*", s)
         if m:
-            # only include lines that indicate errors, not warnings
-            if re.search(r"\berror\b|\bfatal error\b|undefined reference\b", s, flags=re.IGNORECASE):
+            # include lines that indicate errors or warnings
+            if re.search(r"\berror\b|\bfatal error\b|undefined reference\b|\bwarning\b", s, flags=re.IGNORECASE):
                 try:
-                    error_hits.append((m.group(1), int(m.group(2)), s))
+                    issue_hits.append((m.group(1), int(m.group(2)), s))
                 except Exception:
                     pass
 
-    print(f"[*] Found {len(error_hits)} C/C++ error-level issues (warnings ignored)")
+    print(f"[*] Found {len(issue_hits)} C/C++ issues (errors+warnings included)")
 
     snippets = []
-    for file_path, line_num, full_line in error_hits[:200]:
+    for file_path, line_num, full_line in issue_hits[:200]:
         try:
             source_file = (BASE_DIR / file_path).resolve()
             if not source_file.exists():

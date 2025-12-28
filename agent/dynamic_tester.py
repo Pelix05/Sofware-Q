@@ -332,6 +332,36 @@ def run_generated_tests(repo: Path, out_dir: Path = None):
                 # do not mark as failure; continue to next command
                 continue
 
+            # Quick-path: if this test is a README existence check, evaluate
+            # it directly in Python to avoid shell/cwd translation issues on Windows.
+            try:
+                lower_name = (name or '').lower()
+            except Exception:
+                lower_name = ''
+            if ('readme' in lower_name) or ('test-path README' in cmd_text.lower()) or ('type README' in cmd_text.lower()):
+                # check for README.md or README.txt in exec_cwd
+                try:
+                    base = Path(exec_cwd) if exec_cwd else Path.cwd()
+                    rmd = base / 'README.md'
+                    rtxt = base / 'README.txt'
+                    if rmd.exists():
+                        out = rmd.read_text(encoding='utf-8')
+                        ok = True
+                    elif rtxt.exists():
+                        out = rtxt.read_text(encoding='utf-8')
+                        ok = True
+                    else:
+                        out = 'no readme\n'
+                        ok = False
+                except Exception as e:
+                    out = f'error checking readme: {e}\n'
+                    ok = False
+                combined_output.append(f"$ {cmd_text}\n{out}")
+                if not ok:
+                    overall_ok = False
+                # skip invoking shell for this command
+                continue
+
             # If we're on Windows, try to translate common Unix commands into
             # PowerShell-invoked commands so generated_tests.json (often Unix-style)
             # execute correctly.
@@ -1509,7 +1539,14 @@ def main():
         # === Generate and integrate DiagramScene functional tests ===
         if args.cpp:  # Only generate for C++ projects
             try:
-                diag_tests = generate_diagramscene_integration_tests(exe_path=str(built_exe) if 'built_exe' in locals() else None, out_dir=out_dir)
+                # Discover a likely executable in the C++ repo to pass into the DiagramScene test generator.
+                # Do not reference built_exe (not defined in this scope); use _find_executable which returns a path or None.
+                exe_candidate = None
+                try:
+                    exe_candidate = _find_executable(Path(CPP_REPO))
+                except Exception:
+                    exe_candidate = None
+                diag_tests = generate_diagramscene_integration_tests(exe_path=str(exe_candidate) if exe_candidate else None, out_dir=out_dir)
                 if diag_tests and isinstance(diag_tests, list):
                     # Save to generated_tests_diagramscene.json for reference
                     try:

@@ -1,0 +1,139 @@
+Checking diagramscene_ultima\arrow.cpp ...
+1/27 files checked 0% done
+2/27 files checked 0% done
+3/27 files checked 0% done
+4/27 files checked 1% done
+5/27 files checked 2% done
+6/27 files checked 32% done
+7/27 files checked 32% done
+8/27 files checked 32% done
+9/27 files checked 33% done
+10/27 files checked 34% done
+11/27 files checked 64% done
+Checking diagramscene_ultima\deletecommand.cpp ...
+12/27 files checked 64% done
+Checking diagramscene_ultima\diagramitem.cpp ...
+13/27 files checked 65% done
+Checking diagramscene_ultima\diagramitemgroup.cpp ...
+14/27 files checked 65% done
+Checking diagramscene_ultima\diagrampath.cpp ...
+15/27 files checked 66% done
+Checking diagramscene_ultima\diagramscene.cpp ...
+16/27 files checked 67% done
+Checking diagramscene_ultima\diagramtextitem.cpp ...
+17/27 files checked 67% done
+Checking diagramscene_ultima\findreplacedialog.cpp ...
+18/27 files checked 67% done
+Checking diagramscene_ultima\main.cpp ...
+19/27 files checked 67% done
+Checking diagramscene_ultima\mainwindow.cpp ...
+20/27 files checked 70% done
+Checking diagramscene_ultima\mygraphicsview.cpp ...
+21/27 files checked 70% done
+22/27 files checked 71% done
+23/27 files checked 71% done
+24/27 files checked 71% done
+25/27 files checked 72% done
+26/27 files checked 99% done
+Checking diagramscene_ultima\snapshotcommand.cpp ...
+27/27 files checked 100% done
+diagramscene_ultima\arrow.h:7: information: missingIncludeSystem: Include file: <QGraphicsLineItem> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.h:7: information: missingIncludeSystem: Include file: <QGraphicsPixmapItem> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.h:8: information: missingIncludeSystem: Include file: <QList> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.h:9: information: missingIncludeSystem: Include file: <QBrush> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.h:10: information: missingIncludeSystem: Include file: <QJsonObject> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\arrow.cpp:9: information: missingIncludeSystem: Include file: <QPainter> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\arrow.cpp:10: information: missingIncludeSystem: Include file: <QPen> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\arrow.cpp:11: information: missingIncludeSystem: Include file: <QtMath> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramtextitem.h:7: information: missingIncludeSystem: Include file: <QGraphicsTextItem> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramtextitem.h:8: information: missingIncludeSystem: Include file: <QTextDocument> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramtextitem.h:9: information: missingIncludeSystem: Include file: <QMenu> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramscene.h:10: information: missingIncludeSystem: Include file: <QGraphicsScene> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramscene.h:11: information: missingIncludeSystem: Include file: <QKeyEvent> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\findreplacedialog.h:4: information: missingIncludeSystem: Include file: <QDialog> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\findreplacedialog.h:5: information: missingIncludeSystem: Include file: <QLineEdit> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\findreplacedialog.h:6: information: missingIncludeSystem: Include file: <QPushButton> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\findreplacedialog.h:7: information: missingIncludeSystem: Include file: <QVBoxLayout> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\findreplacedialog.h:8: information: missingIncludeSystem: Include file: <QHBoxLayout> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.h:9: information: missingIncludeSystem: Include file: <QMainWindow> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.h:10: information: missingIncludeSystem: Include file: <QPixmap> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.h:12: information: missingIncludeSystem: Include file: <QStack> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\deletecommand.h:5: information: missingIncludeSystem: Include file: <QUndoCommand> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\deletecommand.h:6: information: missingIncludeSystem: Include file: <QGraphicsItem> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\deletecommand.h:7: information: missingIncludeSystem: Include file: <QGraphicsScene> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\deletecommand.cpp:6: performance: useInitializationList: Variable 'm_itemPos' is assigned in constructor body. Consider performing initialization in initialization list.
+diagramscene_ultima\diagramitem.cpp:6: information: missingIncludeSystem: Include file: <QGraphicsScene> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.cpp:7: information: missingIncludeSystem: Include file: <QGraphicsSceneContextMenuEvent> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.cpp:8: information: missingIncludeSystem: Include file: <QMenu> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.cpp:9: information: missingIncludeSystem: Include file: <QPainter> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.cpp:10: information: missingIncludeSystem: Include file: <diagramtextitem.h> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagrampath.h:4: information: missingIncludeSystem: Include file: <QGraphicsPathItem> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagrampath.h:5: information: missingIncludeSystem: Include file: <diagramitem.h> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagrampath.h:6: information: missingIncludeSystem: Include file: <QPainterPath> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.cpp:12: information: missingIncludeSystem: Include file: <diagramscene.h> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.cpp:24: performance: useInitializationList: Variable 'm_color' is assigned in constructor body. Consider performing initialization in initialization list.
+diagramscene_ultima\diagramitem.cpp:856: style: functionConst: Either there is a missing 'override', or the member function 'DiagramItem::getSize' can be const.
+diagramscene_ultima\diagramitem.h:50: style: virtualCallInConstructor: Virtual function 'boundingRect' is called from constructor 'DiagramItem(DiagramType diagramType,QMenu*contextMenu,QGraphicsItem*parent=nullptr)' at line 34. Dynamic binding is not used.
+diagramscene_ultima\diagramitem.cpp:205: style: shadowVariable: Local variable 'b' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:392: style: shadowVariable: Local variable 'w' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:393: style: shadowVariable: Local variable 'h' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:394: style: shadowVariable: Local variable 'b' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:420: style: shadowVariable: Local variable 'w' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:421: style: shadowVariable: Local variable 'h' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:422: style: shadowVariable: Local variable 'b' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:440: style: shadowVariable: Local variable 'w' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:441: style: shadowVariable: Local variable 'h' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:442: style: shadowVariable: Local variable 'b' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:459: style: shadowVariable: Local variable 'w' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:460: style: shadowVariable: Local variable 'h' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:461: style: shadowVariable: Local variable 'b' shadows outer variable
+diagramscene_ultima\diagramitem.cpp:50: style: constParameterReference: Parameter 'color' can be declared as reference to const
+diagramscene_ultima\diagramitemgroup.h:4: information: missingIncludeSystem: Include file: <diagramitem.h> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitemgroup.cpp:2: information: missingIncludeSystem: Include file: <QPen> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitemgroup.cpp:3: information: missingIncludeSystem: Include file: <QPainter> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitemgroup.cpp:4: information: missingIncludeSystem: Include file: <QCursor> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitemgroup.cpp:5: information: missingIncludeSystem: Include file: <QGraphicsSceneHoverEvent> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitemgroup.cpp:6: warning: uninitMemberVar: Member variable 'DiagramItemGroup::m_tfState' is not initialized in the constructor.
+diagramscene_ultima\diagramitemgroup.h:9: style: noExplicitConstructor: Class 'DiagramItemGroup' has a constructor with 1 argument that is not explicit.
+diagramscene_ultima\diagrampath.cpp:2: information: missingIncludeSystem: Include file: <QPainterPath> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagrampath.cpp:49: style: funcArgNamesDifferent: Function 'drawHead' argument 1 names different: declaration 'endPoint' definition 'endpoint'.
+diagramscene_ultima\diagramscene.cpp:7: information: missingInclude: Include file: "qaction.h" not found.
+diagramscene_ultima\diagramscene.cpp:10: information: missingIncludeSystem: Include file: <QGraphicsSceneMouseEvent> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramscene.cpp:11: information: missingIncludeSystem: Include file: <QTextCursor> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramscene.cpp:12: information: missingIncludeSystem: Include file: <QPainter> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramscene.cpp:13: information: missingIncludeSystem: Include file: <QTimer> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramscene.h:46: error: unknownMacro: There is an unknown macro here somewhere. Configuration is required. If slots is a macro then please configure it.
+diagramscene_ultima\findreplacedialog.cpp:3: information: missingIncludeSystem: Include file: <QLabel> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\findreplacedialog.h:23: error: unknownMacro: There is an unknown macro here somewhere. Configuration is required. If slots is a macro then please configure it.
+diagramscene_ultima\main.cpp:3: information: missingIncludeSystem: Include file: <QApplication> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:12: information: missingIncludeSystem: Include file: <QtWidgets> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:19: information: missingIncludeSystem: Include file: <QtWidgets> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:20: information: missingIncludeSystem: Include file: <QFileDialog> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:21: information: missingIncludeSystem: Include file: <QFile> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:22: information: missingIncludeSystem: Include file: <QMessageBox> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:23: information: missingIncludeSystem: Include file: <QString> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:24: information: missingIncludeSystem: Include file: <QList> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:25: information: missingIncludeSystem: Include file: <QPlainTextEdit> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:26: information: missingIncludeSystem: Include file: <QTextStream> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:28: information: missingIncludeSystem: Include file: <QSvgGenerator> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:29: information: missingIncludeSystem: Include file: <QGraphicsScene> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mainwindow.cpp:30: information: missingIncludeSystem: Include file: <diagrampath.h> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mygraphicsview.h:4: information: missingIncludeSystem: Include file: <QGraphicsView> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mygraphicsview.h:5: information: missingIncludeSystem: Include file: <QAction> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\mygraphicsview.h:6: information: missingIncludeSystem: Include file: <QMenu> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\snapshotcommand.h:4: information: missingIncludeSystem: Include file: <QUndoCommand> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\snapshotcommand.h:5: information: missingIncludeSystem: Include file: <QGraphicsView> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\snapshotcommand.h:6: information: missingIncludeSystem: Include file: <QPixmap> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\snapshotcommand.h:7: information: missingIncludeSystem: Include file: <QGraphicsPixmapItem> not found. Please note: Cppcheck does not need standard library headers to get proper results.
+diagramscene_ultima\diagramitem.cpp:55: style: unusedFunction: The function 'setFixedSize' is never used.
+diagramscene_ultima\diagramitem.cpp:654: style: unusedFunction: The function 'disableEvents' is never used.
+diagramscene_ultima\diagramitem.cpp:659: style: unusedFunction: The function 'ableEvents' is never used.
+diagramscene_ultima\diagramitem.cpp:673: style: unusedFunction: The function 'removeArrows' is never used.
+diagramscene_ultima\diagramitem.cpp:690: style: unusedFunction: The function 'removePathes' is never used.
+diagramscene_ultima\diagramitem.cpp:704: style: unusedFunction: The function 'addArrow' is never used.
+diagramscene_ultima\diagramitem.cpp:711: style: unusedFunction: The function 'image' is never used.
+diagramscene_ultima\diagramitem.cpp:830: style: unusedFunction: The function 'setRotationAngle' is never used.
+diagramscene_ultima\diagramitem.cpp:839: style: unusedFunction: The function 'rotationAngle' is never used.
+diagramscene_ultima\diagramitem.cpp:879: style: unusedFunction: The function 'addPathes' is never used.
+diagramscene_ultima\diagramitem.h:56: style: unusedFunction: The function 'diagramType' is never used.
+nofile:0: information: checkersReport: Active checkers: There was critical errors (use --checkers-report=<filename> to see details)

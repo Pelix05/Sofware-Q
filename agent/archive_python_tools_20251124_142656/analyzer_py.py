@@ -56,28 +56,26 @@ def analyze_python(repo_dir: str = None):
 
 
 def extract_snippets(report_content):
-    # Only extract snippets for error-level entries to avoid generating
-    # fixes for warnings or informational messages. We look for linter
-    # style lines that include an explicit error code (Exxxx) or contain
-    # strong keywords like 'error'/'fatal'. This keeps the downstream
-    # LLM patch generation focused on real bugs.
+    # Extract snippets for both error-level and warning-level entries so
+    # the UI and downstream tooling can surface warnings as well as errors.
+    # We look for linter style lines that include an explicit code (E/Wxxxx)
+    # or contain keywords like 'error'/'warning' to capture relevant entries.
     lines = report_content.splitlines()
     error_hits = []  # list of (file_path, line_num, full_line)
     for ln in lines:
-        # Normalize whitespace
         s = ln.strip()
-        # Try to match pylint/flake8 style: file.py:line:col: E0203: ...
+        # Try to match pylint/flake8 style: file.py:line:col: E0203: or W0611:
         m = re.match(r"^([^\s:]+\.py):(\d+):\d+:\s+([A-Z]\d{3,4}):", s)
-        if m and m.group(3).startswith('E'):
+        if m and (m.group(3).startswith('E') or m.group(3).startswith('W')):
             error_hits.append((m.group(1), int(m.group(2)), s))
             continue
         # Fallback: match file.py:line: E0203: (no col)
         m = re.match(r"^([^\s:]+\.py):(\d+):\s+([A-Z]\d{3,4}):", s)
-        if m and m.group(3).startswith('E'):
+        if m and (m.group(3).startswith('E') or m.group(3).startswith('W')):
             error_hits.append((m.group(1), int(m.group(2)), s))
             continue
-        # Some tools output 'error' text without a formal code; capture those
-        if re.search(r"\berror\b|\bfatal error\b|undefined reference\b", s, flags=re.IGNORECASE):
+        # Capture explicit 'error' or 'warning' text lines
+        if re.search(r"\berror\b|\bfatal error\b|\bwarning\b", s, flags=re.IGNORECASE):
             m2 = re.match(r"^([^\s:]+\.py):(\d+):", s)
             if m2:
                 try:
@@ -85,7 +83,7 @@ def extract_snippets(report_content):
                 except Exception:
                     pass
 
-    print(f"[*] Found {len(error_hits)} Python error-level issues (warnings ignored)")
+    print(f"[*] Found {len(error_hits)} Python issues (errors+warnings included)")
 
     snippets = []
     for file_path, line_num, full_line in error_hits[:200]:
