@@ -120,6 +120,7 @@ agent/patches/
 agent/qt_src/
 agent/cpp_tests/build/
 agent/cpp_tests/lib/
+agent/__pycache__
 repo-clean.git/
 repo-mirror.git/
 

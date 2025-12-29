@@ -5,3 +5,10 @@ semgrep
 pytest
 coverage
 pytest-cov
+Flask>=2.3
+GitPython>=3.1
+requests>=2.31
+python-dotenv>=1.0
+cmake>=3.27
+anthropic>=0.34
+openai>=1.0

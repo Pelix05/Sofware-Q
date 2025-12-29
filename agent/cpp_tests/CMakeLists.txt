@@ -47,7 +47,24 @@ if(USE_SANITIZERS)
   endif()
 endif()
 
+if(WIN32 AND NOT DEFINED CMAKE_PREFIX_PATH)
+  set(_qt6_guess
+    "C:/Qt/6.7.2/mingw_64/lib/cmake"
+    "C:/Qt/6.6.0/mingw_64/lib/cmake"
+    "C:/Qt/6.5.0/mingw_64/lib/cmake"
+    "C:/Qt/6.7.2/msvc2019_64/lib/cmake"
+    "C:/Qt/6.9.2/mingw_64/lib/cmake"
+    # 可继续添加其它常见路径
+  )
+  foreach(_qt6_path IN LISTS _qt6_guess)
+    if(EXISTS "${_qt6_path}/Qt6")
+      list(APPEND CMAKE_PREFIX_PATH "${_qt6_path}")
+    endif()
+  endforeach()
+endif()
+
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Test Svg)
+
 
 add_executable(test_example 
   tests/test_deletecommand.cpp
